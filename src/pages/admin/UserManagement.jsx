@@ -61,12 +61,35 @@ export default function UserManagement() {
   };
 
   const remove = async (id) => {
-    if (!confirm(t('admin.deleteUser'))) return;
+    const userToDelete = users.find(u => u._id === id);
+    let confirmMessage = t('admin.deleteUser');
+    
+    // Add specific warnings based on user role
+    if (userToDelete?.role === 'client') {
+      confirmMessage += '\n\n⚠️ ' + t('admin.deleteClientWarning');
+    } else if (userToDelete?.role === 'delivery') {
+      confirmMessage += '\n\n⚠️ ' + t('admin.deleteDeliveryWarning');
+    }
+    
+    if (!confirm(confirmMessage)) return;
+    
     try{
-      await axios.delete(`${API_BASE}/api/v1/users/${id}`, headers());
-      toast.info(t('admin.userDeleted'));
+      const response = await axios.delete(`${API_BASE}/api/v1/users/${id}`, headers());
+      
+      // Show success message with cascade information
+      if (response.data.cascadeInfo) {
+        toast.success(`${t('admin.cascadeCompleted')}: ${response.data.cascadeInfo}`, {
+          autoClose: 5000 // Show longer for important cascade info
+        });
+      } else {
+        toast.success(t('admin.userDeleted'));
+      }
+      
       load();
-    }catch(err){ console.error(err); toast.error(t('admin.deleteFailed')); }
+    }catch(err){ 
+      console.error(err); 
+      toast.error(t('admin.deleteFailed')); 
+    }
   };
 
   const filtered = users.filter(u => {

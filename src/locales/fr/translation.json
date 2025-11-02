@@ -179,6 +179,9 @@
     "deliveryPerson": "Livreur",
     "printInvoice": "Imprimer Facture",
     "assigned": "Assigné",
-    "assignmentNote": "Lorsque vous assignez ce produit, son statut sera automatiquement mis à jour vers \"Récupéré\" et prêt pour la livraison."
+    "assignmentNote": "Lorsque vous assignez ce produit, son statut sera automatiquement mis à jour vers \"Récupéré\" et prêt pour la livraison.",
+    "deleteClientWarning": "ATTENTION: Tous les produits appartenant à ce client seront définitivement supprimés!",
+    "deleteDeliveryWarning": "ATTENTION: Tous les produits assignés à ce livreur seront désassignés et remis 'En Stock'!",
+    "cascadeCompleted": "Utilisateur supprimé avec succès avec opérations en cascade terminées"
   }
 }

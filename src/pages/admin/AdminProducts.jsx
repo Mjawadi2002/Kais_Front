@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { BsPerson, BsBoxSeam, BsTruck, BsQrCode, BsPersonPlus, BsCheck2Circle, BsCheckCircle, BsExclamationTriangle, BsX, BsPrinter } from 'react-icons/bs';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
 import QRCode from 'react-qr-code';
 import logo from '../../assets/images/KMDelivery.png';
 import './AdminProducts.css';
@@ -59,7 +60,7 @@ export default function AdminProducts(){
   const openAssign = (p)=>{ setAssignProduct(p); setAssignTo(p.assignedTo?._id || ''); setShowAssign(true); };
 
   const doAssign = async ()=>{
-    if (!assignTo) return alert('Select a delivery person');
+    if (!assignTo) return toast.warning('Please select a delivery person');
     try{
       // Assign the product to delivery person
       await axios.post(`${API_BASE}/api/v1/products/${assignProduct._id}/assign`, { deliveryPersonId: assignTo }, headers());
@@ -76,10 +77,10 @@ export default function AdminProducts(){
       loadDeliveryPersons();
       
       // Show success message
-      alert('Product assigned successfully and status updated to "Picked"');
+      toast.success('Product assigned successfully and status updated to "Picked"');
     }catch(err){ 
       console.error('assign', err); 
-      alert('Assignment failed'); 
+      toast.error('Assignment failed. Please try again.'); 
     }
   };
 
@@ -105,10 +106,10 @@ export default function AdminProducts(){
       await axios.patch(`${API_BASE}/api/v1/products/${productId}/status`, { status: newStatus }, headers());
       // Refresh products after status update
       loadProducts(selectedClient?._id);
-      alert('Status updated successfully!');
+      toast.success(`Status updated to "${newStatus}" successfully!`);
     } catch (error) {
       console.error('Failed to update product status:', error);
-      alert('Failed to update status');
+      toast.error('Failed to update status. Please try again.');
     }
   };
 

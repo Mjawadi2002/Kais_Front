@@ -15,6 +15,7 @@ import {
 } from 'react-icons/bs';
 import axios from 'axios';
 import QRCode from 'react-qr-code';
+import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import './AssignedDeliveries.css';
 
@@ -246,7 +247,7 @@ export default function AssignedDeliveries() {
       console.log('Status update response:', response.data);
       
       // Show success message
-      alert(`Status successfully changed from "${product.status}" to "${status}"`);
+      toast.success(`Status successfully changed from "${product.status}" to "${status}"`);
       
       await load();
     } catch (err) {
@@ -258,11 +259,11 @@ export default function AssignedDeliveries() {
       });
       
       if (err.response?.status === 400) {
-        alert(`Invalid status "${status}". Backend only allows: Picked, Out for Delivery, Delivered, Problem, Failed/Returned`);
+        toast.error(`Invalid status "${status}". Backend only allows: Picked, Out for Delivery, Delivered, Problem, Failed/Returned`);
       } else if (err.response?.status === 403) {
-        alert('You are not authorized to change this product status.');
+        toast.error('You are not authorized to change this product status.');
       } else {
-        alert(`Status update failed: ${err.response?.data?.message || err.message}`);
+        toast.error(`Status update failed: ${err.response?.data?.message || err.message}`);
       }
     }
   }, [headers, load]);

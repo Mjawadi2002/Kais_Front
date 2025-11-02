@@ -179,6 +179,9 @@
     "deliveryPerson": "Delivery Person",
     "printInvoice": "Print Invoice",
     "assigned": "Assigned",
-    "assignmentNote": "When you assign this product, its status will automatically be updated to \"Picked\" and ready for delivery."
+    "assignmentNote": "When you assign this product, its status will automatically be updated to \"Picked\" and ready for delivery.",
+    "deleteClientWarning": "WARNING: All products belonging to this client will be permanently deleted!",
+    "deleteDeliveryWarning": "WARNING: All products assigned to this delivery person will be unassigned and reset to 'In Stock'!",
+    "cascadeCompleted": "User deleted successfully with cascade operations completed"
   }
 }
