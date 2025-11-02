@@ -1,0 +1,104 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import Login from './pages/Login';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProducts from './pages/admin/AdminProducts';
+import ClientDashboard from './pages/client/ClientDashboard';
+import AddProduct from './pages/client/AddProduct';
+import MyProducts from './pages/client/MyProducts';
+import DeliveryDashboard from './pages/delivery/DeliveryDashboard';
+import AssignedDeliveries from './pages/delivery/AssignedDeliveries';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Layout from './components/layout/Layout';
+
+function ProtectedRoute({ children, roles }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (roles && !roles.includes(user.role)) return <Navigate to="/login" replace />;
+  return children;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <ToastContainer />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <Layout>
+                  <AdminDashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/products"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <Layout>
+                  <AdminProducts />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/*"
+            element={
+              <ProtectedRoute roles={["client"]}>
+                <Layout>
+                  <ClientDashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/add-product"
+            element={
+              <ProtectedRoute roles={["client"]}>
+                <Layout>
+                  <AddProduct />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/products"
+            element={
+              <ProtectedRoute roles={["client"]}>
+                <Layout>
+                  <MyProducts />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/delivery/*"
+            element={
+              <ProtectedRoute roles={["delivery"]}>
+                <Layout>
+                  <DeliveryDashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/delivery/assigned"
+            element={
+              <ProtectedRoute roles={["delivery"]}>
+                <Layout>
+                  <AssignedDeliveries />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
