@@ -13,7 +13,21 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/layout/Layout';
 
 function ProtectedRoute({ children, roles }) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+        <div className="text-center">
+          <div className="spinner-border text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}>
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <div className="text-muted">Checking authentication...</div>
+        </div>
+      </div>
+    );
+  }
+  
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/login" replace />;
   return children;

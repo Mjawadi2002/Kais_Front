@@ -13,7 +13,30 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user, isLoading } = useAuth();
+
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (!isLoading && user) {
+      if (user.role === 'admin') navigate('/admin');
+      else if (user.role === 'client') navigate('/client');
+      else if (user.role === 'delivery') navigate('/delivery');
+    }
+  }, [user, isLoading, navigate]);
+
+  // Show loading while checking auth state
+  if (isLoading) {
+    return (
+      <div className="app-login-bg d-flex align-items-center justify-content-center">
+        <div className="text-center text-white">
+          <div className="spinner-border mb-3" role="status" style={{ width: '3rem', height: '3rem' }}>
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <div>Checking authentication...</div>
+        </div>
+      </div>
+    );
+  }
 
   const submit = async (e) => {
     e.preventDefault();
@@ -21,9 +44,9 @@ export default function Login() {
     try {
       const resp = await apiClient.post('/api/v1/auth/login', { email, password });
       const data = resp.data;
-      // data: { token, user }
-      login(data.user, data.token);
-      toast.success(`Welcome ${data.user.name}! (${config.IS_DEVELOPMENT ? 'DEV' : 'PROD'})`);
+      // data: { accessToken, refreshToken, user, expiresIn }
+      login(data.user, data.accessToken, data.refreshToken, data.expiresIn);
+      toast.success(`Welcome ${data.user.name}! Session will last 1 hour.`);
       if (data.user.role === 'admin') navigate('/admin');
       else if (data.user.role === 'client') navigate('/client');
       else if (data.user.role === 'delivery') navigate('/delivery');

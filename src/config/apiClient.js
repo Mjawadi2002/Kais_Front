@@ -13,7 +13,7 @@ const apiClient = axios.create({
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token = localStorage.getItem('kais_access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,16 +30,48 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor for error handling and token refresh
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Clear auth data on 401
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Try to refresh the token
+        const refreshToken = localStorage.getItem('kais_refresh_token');
+        
+        if (refreshToken) {
+          const response = await fetch(`${config.API_BASE_URL}/api/v1/auth/refresh-token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ refreshToken }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Update stored tokens
+            localStorage.setItem('kais_access_token', data.accessToken);
+            localStorage.setItem('kais_refresh_token', data.refreshToken);
+            
+            // Retry the original request with new token
+            originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+            return apiClient(originalRequest);
+          }
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+      }
+
+      // If refresh fails, clear auth data and redirect
+      localStorage.removeItem('kais_access_token');
+      localStorage.removeItem('kais_refresh_token');
+      localStorage.removeItem('kais_auth');
       
       // Redirect to login (you can customize this)
       if (window.location.pathname !== '/login') {
