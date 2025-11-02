@@ -26,5 +26,13 @@ module.exports = function override(config, env) {
     /global-this/
   ];
 
+  // For production builds, ensure inline runtime chunk is disabled for CSP compliance
+  if (env === 'production') {
+    config.optimization = {
+      ...config.optimization,
+      runtimeChunk: false,
+    };
+  }
+
   return config;
 };
