@@ -51,6 +51,47 @@ export default function AdminDashboard() {
         <Col md={3}><StatCard icon={<BsTruck/>} title="Delivery Persons" value={stats ? stats.deliveryPersons : '—'} /></Col>
       </Row>
 
+      {/* Product Status Breakdown */}
+      {stats?.breakdown && (
+        <Row className="mb-4">
+          <Col>
+            <Card>
+              <Card.Header>
+                <h6 className="mb-0">Product Status Breakdown</h6>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col md={3}>
+                    <div className="text-center p-3 bg-light rounded">
+                      <div className="h4 mb-1">{stats.breakdown.picked}</div>
+                      <div className="small text-muted">Picked</div>
+                    </div>
+                  </Col>
+                  <Col md={3}>
+                    <div className="text-center p-3 bg-light rounded">
+                      <div className="h4 mb-1">{stats.breakdown.outForDelivery}</div>
+                      <div className="small text-muted">Out for Delivery</div>
+                    </div>
+                  </Col>
+                  <Col md={3}>
+                    <div className="text-center p-3 bg-light rounded">
+                      <div className="h4 mb-1">{stats.breakdown.delivered}</div>
+                      <div className="small text-muted">Delivered</div>
+                    </div>
+                  </Col>
+                  <Col md={3}>
+                    <div className="text-center p-3 bg-light rounded">
+                      <div className="h4 mb-1">{stats.breakdown.problem}</div>
+                      <div className="small text-muted">Problems</div>
+                    </div>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+
       <Row>
         <Col>
           <UserManagement />

@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import Login from './pages/Login';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
+import ManageDeliveries from './pages/admin/ManageDeliveries';
 import ClientDashboard from './pages/client/ClientDashboard';
 import AddProduct from './pages/client/AddProduct';
 import MyProducts from './pages/client/MyProducts';
@@ -56,6 +57,16 @@ export default function App() {
               <ProtectedRoute roles={["admin"]}>
                 <Layout>
                   <AdminProducts />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/deliveries"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <Layout>
+                  <ManageDeliveries />
                 </Layout>
               </ProtectedRoute>
             }
