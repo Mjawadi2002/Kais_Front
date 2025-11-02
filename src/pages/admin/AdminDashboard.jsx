@@ -2,20 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { Container, Row, Col, Card } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import UserManagement from './UserManagement';
-import { BsBoxSeam, BsClockHistory, BsPeople, BsTruck } from 'react-icons/bs';
+import { BsBoxSeam, BsClockHistory, BsPeople, BsTruck, BsGraphUp } from 'react-icons/bs';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import './AdminDashboard.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 function StatCard({ icon, title, value, variant }){
   return (
-    <Card className="mb-3 stat-card">
+    <Card className="stat-card">
       <Card.Body className="d-flex align-items-center">
-        <div className="me-3 display-6 text-primary">{icon}</div>
-        <div>
-          <div className="small-muted">{title}</div>
-          <h4 className="mb-0">{value}</h4>
+        <div className="me-3 stat-icon">{icon}</div>
+        <div className="flex-grow-1">
+          <div className="stat-title">{title}</div>
+          <h4 className="stat-value">{value}</h4>
         </div>
       </Card.Body>
     </Card>
@@ -38,67 +39,114 @@ export default function AdminDashboard() {
   }, [user]);
 
   return (
-    <Container fluid>
-      <Row className="mb-3 align-items-center">
-        <Col>
-          <h3>{t('admin.title')}</h3>
-          <div className="small-muted">{t('admin.overview')}</div>
-        </Col>
-      </Row>
+    <div className="admin-dashboard-container">
+      <Container fluid>
+        {/* Enhanced Header Section */}
+        <div className="dashboard-header">
+          <div className="d-flex align-items-center justify-content-between">
+            <div>
+              <h1 className="dashboard-title">{t('admin.title')}</h1>
+              <p className="dashboard-subtitle">{t('admin.overview')}</p>
+            </div>
+            <div className="text-end">
+              <BsGraphUp size={60} style={{ opacity: 0.3 }} />
+            </div>
+          </div>
+        </div>
 
-      <Row>
-        <Col md={3}><StatCard icon={<BsBoxSeam/>} title={t('admin.totalProducts')} value={stats ? stats.totalProducts : '—'} /></Col>
-        <Col md={3}><StatCard icon={<BsClockHistory/>} title={t('admin.totalDeliveries')} value={stats ? stats.totalDeliveries : '—'} /></Col>
-        <Col md={3}><StatCard icon={<BsPeople/>} title={t('admin.totalClients')} value={stats ? stats.totalClients : '—'} /></Col>
-        <Col md={3}><StatCard icon={<BsTruck/>} title={t('admin.deliveryPersons')} value={stats ? stats.deliveryPersons : '—'} /></Col>
-      </Row>
-
-      {/* Product Status Breakdown */}
-      {stats?.breakdown && (
-        <Row className="mb-4">
-          <Col>
-            <Card>
-              <Card.Header>
-                <h6 className="mb-0">{t('admin.productStatusBreakdown')}</h6>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={3}>
-                    <div className="text-center p-3 bg-light rounded">
-                      <div className="h4 mb-1">{stats.breakdown.picked}</div>
-                      <div className="small text-muted">{t('admin.picked')}</div>
-                    </div>
-                  </Col>
-                  <Col md={3}>
-                    <div className="text-center p-3 bg-light rounded">
-                      <div className="h4 mb-1">{stats.breakdown.outForDelivery}</div>
-                      <div className="small text-muted">{t('admin.outForDelivery')}</div>
-                    </div>
-                  </Col>
-                  <Col md={3}>
-                    <div className="text-center p-3 bg-light rounded">
-                      <div className="h4 mb-1">{stats.breakdown.delivered}</div>
-                      <div className="small text-muted">{t('admin.delivered')}</div>
-                    </div>
-                  </Col>
-                  <Col md={3}>
-                    <div className="text-center p-3 bg-light rounded">
-                      <div className="h4 mb-1">{stats.breakdown.problem}</div>
-                      <div className="small text-muted">{t('admin.problems')}</div>
-                    </div>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
+        {/* Enhanced Statistics Cards */}
+        <Row className="g-4 mb-5">
+          <Col lg={3} md={6}>
+            <StatCard 
+              icon={<BsBoxSeam/>} 
+              title={t('admin.totalProducts')} 
+              value={stats ? stats.totalProducts : (
+                <div className="loading-spinner" style={{ width: '30px', height: '30px', border: '3px solid #f3f3f3', borderTop: '3px solid #667eea' }}></div>
+              )} 
+            />
+          </Col>
+          <Col lg={3} md={6}>
+            <StatCard 
+              icon={<BsClockHistory/>} 
+              title={t('admin.totalDeliveries')} 
+              value={stats ? stats.totalDeliveries : (
+                <div className="loading-spinner" style={{ width: '30px', height: '30px', border: '3px solid #f3f3f3', borderTop: '3px solid #667eea' }}></div>
+              )} 
+            />
+          </Col>
+          <Col lg={3} md={6}>
+            <StatCard 
+              icon={<BsPeople/>} 
+              title={t('admin.totalClients')} 
+              value={stats ? stats.totalClients : (
+                <div className="loading-spinner" style={{ width: '30px', height: '30px', border: '3px solid #f3f3f3', borderTop: '3px solid #667eea' }}></div>
+              )} 
+            />
+          </Col>
+          <Col lg={3} md={6}>
+            <StatCard 
+              icon={<BsTruck/>} 
+              title={t('admin.deliveryPersons')} 
+              value={stats ? stats.deliveryPersons : (
+                <div className="loading-spinner" style={{ width: '30px', height: '30px', border: '3px solid #f3f3f3', borderTop: '3px solid #667eea' }}></div>
+              )} 
+            />
           </Col>
         </Row>
-      )}
 
-      <Row>
-        <Col>
-          <UserManagement />
-        </Col>
-      </Row>
+        {/* Enhanced Product Status Breakdown */}
+        {stats?.breakdown && (
+          <Row className="mb-5">
+            <Col>
+              <Card className="status-breakdown-card">
+                <div className="status-breakdown-header">
+                  <h2 className="status-breakdown-title">{t('admin.productStatusBreakdown')}</h2>
+                </div>
+                <div className="status-breakdown-body">
+                  <Row className="g-4">
+                    <Col lg={3} md={6}>
+                      <div className="status-item success-indicator">
+                        <div className="status-number">{stats.breakdown.picked}</div>
+                        <div className="status-label">{t('admin.picked')}</div>
+                      </div>
+                    </Col>
+                    <Col lg={3} md={6}>
+                      <div className="status-item info-indicator">
+                        <div className="status-number">{stats.breakdown.outForDelivery}</div>
+                        <div className="status-label">{t('admin.outForDelivery')}</div>
+                      </div>
+                    </Col>
+                    <Col lg={3} md={6}>
+                      <div className="status-item success-indicator">
+                        <div className="status-number">{stats.breakdown.delivered}</div>
+                        <div className="status-label">{t('admin.delivered')}</div>
+                      </div>
+                    </Col>
+                    <Col lg={3} md={6}>
+                      <div className="status-item warning-indicator">
+                        <div className="status-number">{stats.breakdown.problem}</div>
+                        <div className="status-label">{t('admin.problems')}</div>
+                      </div>
+                    </Col>
+                  </Row>
+                </div>
+              </Card>
+            </Col>
+          </Row>
+        )}
+
+        {/* User Management Section */}
+        <Row className="mb-5">
+          <Col>
+            <div className="user-management-section">
+              <h2 className="section-title">User Management</h2>
+              <div className="user-management-container">
+                <UserManagement />
+              </div>
+            </div>
+          </Col>
+        </Row>
     </Container>
+    </div>
   );
 }

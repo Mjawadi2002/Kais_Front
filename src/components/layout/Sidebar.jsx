@@ -87,17 +87,6 @@ export default function Sidebar({ isOpen, onClose }) {
               </Nav.Link>
               <Nav.Link 
                 as={Link} 
-                to="/admin/users" 
-                className="sidebar-nav-item d-flex align-items-center py-3 px-3 mb-2 rounded-3 text-decoration-none"
-                onClick={handleNavClick}
-              >
-                <div className="nav-icon me-3">
-                  <BsPeople size={18}/>
-                </div>
-                <span className="nav-text">{t('navigation.users')}</span>
-              </Nav.Link>
-              <Nav.Link 
-                as={Link} 
                 to="/admin/products" 
                 className="sidebar-nav-item d-flex align-items-center py-3 px-3 mb-2 rounded-3 text-decoration-none"
                 onClick={handleNavClick}

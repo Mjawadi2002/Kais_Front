@@ -1,0 +1,12 @@
+/* AddProduct Component Styles */
+
+.product-form-card {
+  transition: all 0.3s ease;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #ffffff, #f8f9fa);
+}
+
+.product-form-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+}
