@@ -2,11 +2,14 @@ import React from 'react';
 import { Navbar, Nav, NavDropdown, Container, Form, FormControl, Button } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BsBell, BsPersonCircle, BsList } from 'react-icons/bs';
+import LanguageSwitcher from '../LanguageSwitcher';
 
 export default function Topbar({ onToggleSidebar }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const doLogout = () => {
     logout();
@@ -36,13 +39,18 @@ export default function Topbar({ onToggleSidebar }) {
         {/* Search bar (desktop only) */}
         <Form className="d-none d-lg-flex me-3" style={{ width: '300px' }}>
           <FormControl 
-            placeholder="Search deliveries, products..." 
+            placeholder={t('common.search') + " deliveries, products..."} 
             size="sm"
           />
         </Form>
 
         {/* Right side navigation */}
         <Nav className="align-items-center">
+          {/* Language Switcher */}
+          <div className="me-2">
+            <LanguageSwitcher variant="outline-secondary" size="sm" />
+          </div>
+          
           <Nav.Link className="p-2">
             <BsBell size={18} />
           </Nav.Link>
@@ -51,7 +59,7 @@ export default function Topbar({ onToggleSidebar }) {
               <span className="d-flex align-items-center">
                 <BsPersonCircle className="me-1" size={18}/>
                 <span className="d-none d-sm-inline">
-                  {user ? user.name : 'Guest'}
+                  {t('common.welcome')} {user ? user.username || user.name : 'Guest'}
                 </span>
               </span>
             } 
@@ -61,7 +69,7 @@ export default function Topbar({ onToggleSidebar }) {
             <NavDropdown.Item>Profile</NavDropdown.Item>
             <NavDropdown.Item>Settings</NavDropdown.Item>
             <NavDropdown.Divider />
-            <NavDropdown.Item onClick={doLogout}>Logout</NavDropdown.Item>
+            <NavDropdown.Item onClick={doLogout}>{t('common.logout')}</NavDropdown.Item>
           </NavDropdown>
         </Nav>
       </div>

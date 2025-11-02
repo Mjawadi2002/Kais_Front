@@ -1,11 +1,13 @@
 import React from 'react';
 import { Nav } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BsSpeedometer2, BsPeople, BsBox, BsTruck, BsX } from 'react-icons/bs';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   if (!user) return null;
 
@@ -81,7 +83,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="nav-icon me-3">
                   <BsSpeedometer2 size={18}/>
                 </div>
-                <span className="nav-text">Dashboard</span>
+                <span className="nav-text">{t('navigation.dashboard')}</span>
               </Nav.Link>
               <Nav.Link 
                 as={Link} 
@@ -92,7 +94,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="nav-icon me-3">
                   <BsPeople size={18}/>
                 </div>
-                <span className="nav-text">Manage Users</span>
+                <span className="nav-text">{t('navigation.users')}</span>
               </Nav.Link>
               <Nav.Link 
                 as={Link} 
@@ -103,7 +105,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="nav-icon me-3">
                   <BsBox size={18}/>
                 </div>
-                <span className="nav-text">Manage Products</span>
+                <span className="nav-text">{t('navigation.manageProducts')}</span>
               </Nav.Link>
               <Nav.Link 
                 as={Link} 
@@ -114,7 +116,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="nav-icon me-3">
                   <BsTruck size={18}/>
                 </div>
-                <span className="nav-text">Manage Deliveries</span>
+                <span className="nav-text">{t('navigation.deliveries')}</span>
               </Nav.Link>
             </>
           )}
@@ -130,7 +132,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="nav-icon me-3">
                   <BsBox size={18}/>
                 </div>
-                <span className="nav-text">Client Dashboard</span>
+                <span className="nav-text">{t('navigation.analytics')}</span>
               </Nav.Link>
               <Nav.Link 
                 as={Link} 
@@ -141,7 +143,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="nav-icon me-3">
                   <BsBox size={18}/>
                 </div>
-                <span className="nav-text">My Products</span>
+                <span className="nav-text">{t('navigation.products')}</span>
               </Nav.Link>
               <Nav.Link 
                 as={Link} 
@@ -152,7 +154,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="nav-icon me-3">
                   <BsBox size={18}/>
                 </div>
-                <span className="nav-text">Add Product</span>
+                <span className="nav-text">{t('navigation.addProduct')}</span>
               </Nav.Link>
             </>
           )}
@@ -168,7 +170,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="nav-icon me-3">
                   <BsTruck size={18}/>
                 </div>
-                <span className="nav-text">Delivery Dashboard</span>
+                <span className="nav-text">{t('navigation.dashboard')}</span>
               </Nav.Link>
               <Nav.Link 
                 as={Link} 

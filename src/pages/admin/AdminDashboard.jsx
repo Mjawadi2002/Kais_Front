@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Row, Col, Card } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
 import UserManagement from './UserManagement';
 import { BsBoxSeam, BsClockHistory, BsPeople, BsTruck } from 'react-icons/bs';
 import axios from 'axios';
@@ -23,6 +24,7 @@ function StatCard({ icon, title, value, variant }){
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
 
   useEffect(()=>{
@@ -39,16 +41,16 @@ export default function AdminDashboard() {
     <Container fluid>
       <Row className="mb-3 align-items-center">
         <Col>
-          <h3>Admin Dashboard</h3>
-          <div className="small-muted">Overview of products, deliveries and users</div>
+          <h3>{t('admin.title')}</h3>
+          <div className="small-muted">{t('admin.overview')}</div>
         </Col>
       </Row>
 
       <Row>
-        <Col md={3}><StatCard icon={<BsBoxSeam/>} title="Total Products" value={stats ? stats.totalProducts : '—'} /></Col>
-        <Col md={3}><StatCard icon={<BsClockHistory/>} title="Total Deliveries" value={stats ? stats.totalDeliveries : '—'} /></Col>
-        <Col md={3}><StatCard icon={<BsPeople/>} title="Total Clients" value={stats ? stats.totalClients : '—'} /></Col>
-        <Col md={3}><StatCard icon={<BsTruck/>} title="Delivery Persons" value={stats ? stats.deliveryPersons : '—'} /></Col>
+        <Col md={3}><StatCard icon={<BsBoxSeam/>} title={t('admin.totalProducts')} value={stats ? stats.totalProducts : '—'} /></Col>
+        <Col md={3}><StatCard icon={<BsClockHistory/>} title={t('admin.totalDeliveries')} value={stats ? stats.totalDeliveries : '—'} /></Col>
+        <Col md={3}><StatCard icon={<BsPeople/>} title={t('admin.totalClients')} value={stats ? stats.totalClients : '—'} /></Col>
+        <Col md={3}><StatCard icon={<BsTruck/>} title={t('admin.deliveryPersons')} value={stats ? stats.deliveryPersons : '—'} /></Col>
       </Row>
 
       {/* Product Status Breakdown */}
@@ -57,32 +59,32 @@ export default function AdminDashboard() {
           <Col>
             <Card>
               <Card.Header>
-                <h6 className="mb-0">Product Status Breakdown</h6>
+                <h6 className="mb-0">{t('admin.productStatusBreakdown')}</h6>
               </Card.Header>
               <Card.Body>
                 <Row>
                   <Col md={3}>
                     <div className="text-center p-3 bg-light rounded">
                       <div className="h4 mb-1">{stats.breakdown.picked}</div>
-                      <div className="small text-muted">Picked</div>
+                      <div className="small text-muted">{t('admin.picked')}</div>
                     </div>
                   </Col>
                   <Col md={3}>
                     <div className="text-center p-3 bg-light rounded">
                       <div className="h4 mb-1">{stats.breakdown.outForDelivery}</div>
-                      <div className="small text-muted">Out for Delivery</div>
+                      <div className="small text-muted">{t('admin.outForDelivery')}</div>
                     </div>
                   </Col>
                   <Col md={3}>
                     <div className="text-center p-3 bg-light rounded">
                       <div className="h4 mb-1">{stats.breakdown.delivered}</div>
-                      <div className="small text-muted">Delivered</div>
+                      <div className="small text-muted">{t('admin.delivered')}</div>
                     </div>
                   </Col>
                   <Col md={3}>
                     <div className="text-center p-3 bg-light rounded">
                       <div className="h4 mb-1">{stats.breakdown.problem}</div>
-                      <div className="small text-muted">Problems</div>
+                      <div className="small text-muted">{t('admin.problems')}</div>
                     </div>
                   </Col>
                 </Row>

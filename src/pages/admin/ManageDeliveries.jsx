@@ -26,10 +26,12 @@ import {
 } from 'react-icons/bs';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import apiClient from '../../config/apiClient';
 
 export default function ManageDeliveries() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   
   // State management
   const [products, setProducts] = useState([]);
@@ -49,13 +51,13 @@ export default function ManageDeliveries() {
   
   // Status options based on ProductModel
   const statusOptions = [
-    { value: '', label: 'All Statuses' },
-    { value: 'In Stock', label: 'In Stock', variant: 'secondary' },
-    { value: 'Picked', label: 'Picked', variant: 'info' },
-    { value: 'Out for Delivery', label: 'Out for Delivery', variant: 'primary' },
-    { value: 'Delivered', label: 'Delivered', variant: 'success' },
-    { value: 'Problem', label: 'Problem', variant: 'warning' },
-    { value: 'Failed/Returned', label: 'Failed/Returned', variant: 'danger' }
+    { value: '', label: t('deliveries.allStatuses') },
+    { value: 'In Stock', label: t('status.inStock'), variant: 'secondary' },
+    { value: 'Picked', label: t('status.picked'), variant: 'info' },
+    { value: 'Out for Delivery', label: t('status.outForDelivery'), variant: 'primary' },
+    { value: 'Delivered', label: t('status.delivered'), variant: 'success' },
+    { value: 'Problem', label: t('status.problem'), variant: 'warning' },
+    { value: 'Failed/Returned', label: t('status.failed'), variant: 'danger' }
   ];
 
   // Load products assigned to delivery persons
@@ -89,7 +91,7 @@ export default function ManageDeliveries() {
       setProducts(filteredProducts);
     } catch (error) {
       console.error('Failed to load products:', error);
-      toast.error('Failed to load products');
+      toast.error(t('errors.loadProductsFailed'));
     } finally {
       setLoading(false);
     }
@@ -150,11 +152,11 @@ export default function ManageDeliveries() {
   const handleUpdateStatus = async (productId, newStatus) => {
     try {
       await apiClient.put(`/api/v1/products/${productId}`, { status: newStatus });
-      toast.success('Product status updated successfully');
+      toast.success(t('messages.statusUpdated'));
       loadProducts();
     } catch (error) {
       console.error('Failed to update product status:', error);
-      toast.error('Failed to update product status');
+      toast.error(t('errors.updateStatusFailed'));
     }
   };
 
@@ -164,9 +166,9 @@ export default function ManageDeliveries() {
         <Col>
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h3 className="mb-1">Manage Deliveries</h3>
+              <h3 className="mb-1">{t('deliveries.manageDeliveries')}</h3>
               <p className="text-muted mb-0">
-                Monitor and manage products assigned to delivery persons
+                {t('deliveries.subtitle')}
               </p>
             </div>
           </div>
@@ -185,7 +187,7 @@ export default function ManageDeliveries() {
                       <BsSearch />
                     </InputGroup.Text>
                     <Form.Control
-                      placeholder="Search by product name or client name..."
+                      placeholder={t('deliveries.searchPlaceholder')}
                       value={filters.search}
                       onChange={(e) => handleFilterChange('search', e.target.value)}
                     />
@@ -210,7 +212,7 @@ export default function ManageDeliveries() {
                     value={filters.client} 
                     onChange={(e) => handleFilterChange('client', e.target.value)}
                   >
-                    <option value="">All Clients</option>
+                    <option value="">{t('deliveries.allClients')}</option>
                     {clients.map(client => (
                       <option key={client._id} value={client._id}>
                         {client.username}
@@ -224,7 +226,7 @@ export default function ManageDeliveries() {
                     value={filters.deliveryPerson} 
                     onChange={(e) => handleFilterChange('deliveryPerson', e.target.value)}
                   >
-                    <option value="">All Delivery Persons</option>
+                    <option value="">{t('deliveries.allDeliveryPersons')}</option>
                     {deliveryPersons.map(person => (
                       <option key={person._id} value={person._id}>
                         {person.username}
@@ -235,7 +237,7 @@ export default function ManageDeliveries() {
                 
                 <Col md={1}>
                   <Button variant="outline-secondary" onClick={clearFilters}>
-                    Clear
+                    {t('deliveries.clearFilters')}
                   </Button>
                 </Col>
               </Row>
@@ -252,7 +254,7 @@ export default function ManageDeliveries() {
               <div className="d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">
                   <BsBox className="me-2" />
-                  Products ({products.length})
+                  {t('navigation.products')} ({products.length})
                 </h5>
               </div>
             </Card.Header>
@@ -260,26 +262,26 @@ export default function ManageDeliveries() {
               {loading ? (
                 <div className="text-center py-5">
                   <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">{t('common.loading')}</span>
                   </div>
                 </div>
               ) : products.length === 0 ? (
                 <Alert variant="info" className="text-center">
                   <BsBox size={48} className="mb-3 text-muted" />
-                  <h5>No products found</h5>
-                  <p className="mb-0">Try adjusting your filters.</p>
+                  <h5>{t('deliveries.noProductsFound')}</h5>
+                  <p className="mb-0">{t('deliveries.adjustFilters')}</p>
                 </Alert>
               ) : (
                 <div className="table-responsive">
                   <Table hover>
                     <thead className="table-light">
                       <tr>
-                        <th>Product Name</th>
-                        <th>Price</th>
-                        <th>Delivery Person</th>
-                        <th>Client</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th>{t('products.productName')}</th>
+                        <th>{t('common.price')}</th>
+                        <th>{t('products.deliveryPerson')}</th>
+                        <th>{t('common.client')}</th>
+                        <th>{t('common.status')}</th>
+                        <th>{t('common.actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -306,7 +308,7 @@ export default function ManageDeliveries() {
                                 </div>
                               </div>
                             ) : (
-                              <Badge bg="secondary">Not assigned</Badge>
+                              <Badge bg="secondary">{t('products.notAssigned')}</Badge>
                             )}
                           </td>
                           <td>
@@ -349,7 +351,7 @@ export default function ManageDeliveries() {
                           <td>
                             <Dropdown>
                               <Dropdown.Toggle size="sm" variant="outline-primary">
-                                Actions
+                                {t('common.actions')}
                               </Dropdown.Toggle>
                               <Dropdown.Menu>
                                 <Dropdown.Item 
@@ -357,21 +359,21 @@ export default function ManageDeliveries() {
                                   disabled={product.status === 'Picked'}
                                 >
                                   <BsCheck2Circle className="me-2" />
-                                  Mark as Picked
+                                  {t('deliveries.markAsPicked')}
                                 </Dropdown.Item>
                                 <Dropdown.Item 
                                   onClick={() => handleUpdateStatus(product._id, 'Out for Delivery')}
                                   disabled={product.status === 'Out for Delivery'}
                                 >
                                   <BsTruck className="me-2" />
-                                  Out for Delivery
+                                  {t('deliveries.outForDelivery')}
                                 </Dropdown.Item>
                                 <Dropdown.Item 
                                   onClick={() => handleUpdateStatus(product._id, 'Delivered')}
                                   disabled={product.status === 'Delivered'}
                                 >
                                   <BsCheckCircle className="me-2" />
-                                  Mark as Delivered
+                                  {t('deliveries.markAsDelivered')}
                                 </Dropdown.Item>
                                 <Dropdown.Divider />
                                 <Dropdown.Item 
@@ -379,14 +381,14 @@ export default function ManageDeliveries() {
                                   className="text-warning"
                                 >
                                   <BsExclamationTriangle className="me-2" />
-                                  Report Problem
+                                  {t('deliveries.reportProblem')}
                                 </Dropdown.Item>
                                 <Dropdown.Item 
                                   onClick={() => handleUpdateStatus(product._id, 'Failed/Returned')}
                                   className="text-danger"
                                 >
                                   <BsX className="me-2" />
-                                  Mark as Failed
+                                  {t('deliveries.markAsFailed')}
                                 </Dropdown.Item>
                               </Dropdown.Menu>
                             </Dropdown>

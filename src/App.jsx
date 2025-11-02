@@ -13,6 +13,9 @@ import AssignedDeliveries from './pages/delivery/AssignedDeliveries';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/layout/Layout';
 
+// Import i18n configuration
+import './i18n';
+
 function ProtectedRoute({ children, roles }) {
   const { user, isLoading } = useAuth();
   

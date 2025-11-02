@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Container, Row, Col, Card, Table, Badge, Alert, ProgressBar } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
 import { 
   BsBox, 
   BsTruck, 
@@ -307,6 +308,7 @@ const getStatusVariant = (status) => {
 
 export default function ClientDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -354,7 +356,7 @@ export default function ClientDashboard() {
           <Col>
             <Alert variant="danger">
               <BsExclamationTriangle className="me-2" />
-              {error}
+              {t('errors.loadDataFailed')}
             </Alert>
           </Col>
         </Row>
@@ -370,9 +372,9 @@ export default function ClientDashboard() {
             <div>
               <h3 className="mb-1">
                 <BsBarChart className="me-2 text-primary" />
-                Analytics Dashboard
+                {t('dashboard.title')}
               </h3>
-              <div className="text-muted">Track your product delivery performance and insights</div>
+              <div className="text-muted">{t('dashboard.subtitle')}</div>
             </div>
             <Card className="border-0 shadow-sm">
               <Card.Body className="p-3">
@@ -381,7 +383,7 @@ export default function ClientDashboard() {
                     <BsPerson size={20} className="text-primary" />
                   </div>
                   <div>
-                    <div className="text-muted small">Welcome back</div>
+                    <div className="text-muted small">{t('dashboard.welcomeBack')}</div>
                     <div className="fw-bold">{user?.username || user?.name}</div>
                   </div>
                 </div>
@@ -396,7 +398,7 @@ export default function ClientDashboard() {
         <Col lg={3} md={6}>
           <StatCard 
             icon={<BsBox />} 
-            title="Total Products" 
+            title={t('dashboard.totalProducts')} 
             value={stats?.totalProducts} 
             variant="primary"
             loading={loading}
@@ -406,7 +408,7 @@ export default function ClientDashboard() {
         <Col lg={3} md={6}>
           <StatCard 
             icon={<BsCheckCircle />} 
-            title="Delivered" 
+            title={t('dashboard.delivered')} 
             value={stats?.delivered} 
             variant="success"
             loading={loading}
@@ -414,14 +416,14 @@ export default function ClientDashboard() {
             trend={{ 
               type: stats?.timeline?.last7Days > stats?.timeline?.last14Days - stats?.timeline?.last7Days ? 'up' : 'down', 
               value: Math.abs(stats?.timeline?.last7Days - (stats?.timeline?.last14Days - stats?.timeline?.last7Days)), 
-              period: 'this week' 
+              period: t('dashboard.thisWeek') 
             }}
           />
         </Col>
         <Col lg={3} md={6}>
           <StatCard 
             icon={<BsTruck />} 
-            title="In Transit" 
+            title={t('dashboard.inTransit')} 
             value={stats?.inTransit} 
             variant="info"
             loading={loading}
@@ -431,7 +433,7 @@ export default function ClientDashboard() {
         <Col lg={3} md={6}>
           <StatCard 
             icon={<BsExclamationTriangle />} 
-            title="Issues" 
+            title={t('dashboard.issues')} 
             value={stats?.problem} 
             variant="warning"
             loading={loading}
@@ -439,7 +441,7 @@ export default function ClientDashboard() {
             trend={{ 
               type: stats?.timeline?.problems7Days < (stats?.timeline?.problems14Days - stats?.timeline?.problems7Days) ? 'down' : 'up', 
               value: Math.abs(stats?.timeline?.problems7Days - (stats?.timeline?.problems14Days - stats?.timeline?.problems7Days)), 
-              period: 'vs last week' 
+              period: t('dashboard.vsLastWeek') 
             }}
           />
         </Col>
