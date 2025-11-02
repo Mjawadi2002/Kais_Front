@@ -32,6 +32,7 @@ import {
 import { Doughnut, Bar, Line } from 'react-chartjs-2';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../config/apiClient';
+import './ClientDashboard.css';
 
 // Register Chart.js components
 ChartJS.register(
@@ -48,46 +49,38 @@ ChartJS.register(
 
 function StatCard({ icon, title, value, variant = "primary", loading = false, percentage = null, trend = null }) {
   return (
-    <Card className="h-100 border-0 shadow-sm">
-      <Card.Body className="p-3">
-        <div className="d-flex align-items-center">
-          <div className={`rounded-circle p-3 me-3 bg-${variant} bg-opacity-10`}>
-            {React.cloneElement(icon, { 
-              size: 24, 
-              className: `text-${variant}` 
-            })}
-          </div>
-          <div className="flex-grow-1">
-            <div className="text-muted small mb-1">{title}</div>
-            <div className="h4 mb-0 fw-bold">
-              {loading ? (
-                <div className="spinner-border spinner-border-sm" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-              ) : (
-                value || 0
-              )}
-            </div>
-            {percentage !== null && (
-              <div className="mt-2">
-                <ProgressBar 
-                  now={percentage} 
-                  variant={variant}
-                  style={{ height: '4px' }}
-                />
-                <small className="text-muted">{percentage.toFixed(1)}% of total</small>
-              </div>
-            )}
-            {trend && (
-              <div className="mt-1">
-                <small className={`text-${trend.type === 'up' ? 'success' : trend.type === 'down' ? 'danger' : 'muted'}`}>
-                  <BsGraphUp className={`me-1 ${trend.type === 'down' ? 'rotate-180' : ''}`} />
-                  {trend.value}% {trend.period}
-                </small>
-              </div>
-            )}
-          </div>
+    <Card className="enhanced-stat-card h-100">
+      <Card.Body className="p-4">
+        <div className={`stat-icon-container bg-${variant} bg-opacity-10`}>
+          {React.cloneElement(icon, { 
+            size: 28, 
+            className: `text-${variant}` 
+          })}
         </div>
+        <div className="stat-title">{title}</div>
+        <div className="stat-value">
+          {loading ? (
+            <div className="loading-spinner-enhanced"></div>
+          ) : (
+            value || 0
+          )}
+        </div>
+        {percentage !== null && (
+          <div className="stat-progress">
+            <ProgressBar 
+              now={percentage} 
+              variant={variant}
+              className="rounded-pill"
+            />
+            <small className="text-muted mt-1 d-block">{percentage.toFixed(1)}% of total</small>
+          </div>
+        )}
+        {trend && (
+          <div className={`stat-trend text-${trend.type === 'up' ? 'success' : trend.type === 'down' ? 'danger' : 'muted'}`}>
+            <BsGraphUp className={trend.type === 'down' ? 'rotate-180' : ''} />
+            <span>{trend.value}% {trend.period}</span>
+          </div>
+        )}
       </Card.Body>
     </Card>
   );
@@ -365,33 +358,20 @@ export default function ClientDashboard() {
   }
 
   return (
-    <Container fluid>
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex align-items-center justify-content-between">
-            <div>
-              <h3 className="mb-1">
-                <BsBarChart className="me-2 text-primary" />
-                {t('dashboard.title')}
-              </h3>
-              <div className="text-muted">{t('dashboard.subtitle')}</div>
-            </div>
-            <Card className="border-0 shadow-sm">
-              <Card.Body className="p-3">
-                <div className="d-flex align-items-center">
-                  <div className="rounded-circle p-2 me-3 bg-primary bg-opacity-10">
-                    <BsPerson size={20} className="text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-muted small">{t('dashboard.welcomeBack')}</div>
-                    <div className="fw-bold">{user?.username || user?.name}</div>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
+    <Container fluid className="client-dashboard-container">
+      {/* Enhanced Header Section */}
+      <div className="client-dashboard-header">
+        <div className="d-flex align-items-center justify-content-between">
+          <div>
+            <h1 className="dashboard-title">
+              <BsBarChart className="me-3" />
+              Analytics Dashboard
+            </h1>
+            <p className="dashboard-subtitle">Track your product delivery performance and insights</p>
           </div>
-        </Col>
-      </Row>
+
+        </div>
+      </div>
 
       {/* Key Performance Indicators */}
       <Row className="g-3 mb-4">
@@ -513,29 +493,29 @@ export default function ClientDashboard() {
       {/* Analytics Charts */}
       <Row className="g-3 mb-4">
         <Col lg={6}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Header className="bg-light">
-              <h6 className="mb-0">
-                <BsBox className="me-2" />
+          <Card className="chart-card h-100">
+            <div className="chart-header">
+              <h2 className="chart-title">
+                <BsBox />
                 Product Status Distribution
-              </h6>
-            </Card.Header>
-            <Card.Body>
+              </h2>
+            </div>
+            <div className="chart-body">
               <StatusDistributionChart data={stats} loading={loading} />
-            </Card.Body>
+            </div>
           </Card>
         </Col>
         <Col lg={6}>
-          <Card className="border-0 shadow-sm h-100">
-            <Card.Header className="bg-light">
-              <h6 className="mb-0">
-                <BsGraphUp className="me-2" />
+          <Card className="chart-card h-100">
+            <div className="chart-header">
+              <h2 className="chart-title">
+                <BsGraphUp />
                 Delivery Performance Timeline
-              </h6>
-            </Card.Header>
-            <Card.Body>
+              </h2>
+            </div>
+            <div className="chart-body">
               <DeliveryTimelineChart data={stats} loading={loading} />
-            </Card.Body>
+            </div>
           </Card>
         </Col>
       </Row>

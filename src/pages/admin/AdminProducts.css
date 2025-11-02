@@ -169,9 +169,14 @@
 }
 
 .price-display {
-  font-weight: 700;
-  color: #28a745;
-  font-size: 1.1rem;
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
+  display: inline-block;
 }
 
 .assignee-info {
@@ -243,6 +248,35 @@
   padding: 1rem;
   border-radius: 10px;
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Print Invoice Button */
+.print-invoice-btn {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: none;
+  border-radius: 25px;
+  padding: 0.5rem 1.5rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+  transition: all 0.3s ease;
+}
+
+.print-invoice-btn:hover {
+  background: linear-gradient(135deg, #218838 0%, #1eb886 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+  color: white;
+}
+
+.print-invoice-btn:focus {
+  box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+  color: white;
+}
+
+.print-invoice-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
 }
 
 .product-details {
@@ -372,9 +406,11 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   padding: 0.5rem 0;
   min-width: 180px;
-  z-index: 1050 !important;
+  z-index: 10001 !important;
   backdrop-filter: blur(10px);
   background: rgba(255, 255, 255, 0.95) !important;
+  position: absolute !important;
+  will-change: transform;
 }
 
 .status-dropdown-item {
@@ -401,9 +437,11 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   padding: 0.5rem 0;
   min-width: 200px;
-  z-index: 1050 !important;
+  z-index: 10002 !important;
   backdrop-filter: blur(10px);
   background: rgba(255, 255, 255, 0.95) !important;
+  position: absolute !important;
+  will-change: transform;
 }
 
 .action-dropdown-item {
@@ -446,6 +484,7 @@
 /* Prevent dropdown conflicts and ensure proper z-index */
 .products-table .dropdown {
   position: relative;
+  z-index: 1000;
 }
 
 .products-table .dropdown-menu {
@@ -453,12 +492,80 @@
   top: 100% !important;
   left: auto !important;
   right: 0 !important;
-  z-index: 1050 !important;
+  z-index: 9999 !important;
   transform: none !important;
+  will-change: transform;
+}
+
+.products-table .dropdown.show {
+  z-index: 9998 !important;
 }
 
 .products-table .dropdown.show .dropdown-menu {
   display: block !important;
+  z-index: 10000 !important;
+}
+
+/* Enhanced z-index management for table rows */
+.product-row {
+  position: relative;
+  z-index: 1;
+}
+
+.product-row:has(.dropdown.show) {
+  z-index: 9997 !important;
+}
+
+/* Alternative for browsers that don't support :has() */
+.product-row.dropdown-open {
+  z-index: 9997 !important;
+}
+
+/* Override any competing z-index values */
+.products-table-wrapper {
+  overflow: visible !important;
+  position: relative;
+  z-index: 1;
+}
+
+.products-card {
+  overflow: visible !important;
+  position: relative;
+}
+
+/* Ensure action buttons container doesn't interfere */
+.action-buttons {
+  position: relative;
+  z-index: 1001;
+}
+
+/* Global Bootstrap dropdown z-index override for admin products */
+.admin-products-container .dropdown-menu {
+  z-index: 10003 !important;
+  position: absolute !important;
+}
+
+.admin-products-container .dropdown.show {
+  z-index: 9999 !important;
+}
+
+/* Ensure no parent containers clip the dropdowns */
+.admin-products-container,
+.admin-products-container .row,
+.admin-products-container .col,
+.admin-products-container .card {
+  overflow: visible !important;
+}
+
+/* Special handling for scrollable areas */
+.clients-list {
+  overflow-y: auto;
+  overflow-x: visible;
+}
+
+.products-table-wrapper {
+  overflow-y: auto;
+  overflow-x: visible;
 }
 
 /* Action Buttons Enhancement */
@@ -481,6 +588,22 @@
   font-weight: 600;
   transition: all 0.3s ease;
   white-space: nowrap;
+}
+
+.assigned-button {
+  border-radius: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: none;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.assigned-button:disabled {
+  opacity: 0.8;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
 }
 
 .qr-button:hover,

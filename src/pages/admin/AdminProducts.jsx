@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Table, Button, Modal, Row, Col, ListGroup, Form, Card, Badge, Dropdown } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { BsPerson, BsBoxSeam, BsTruck, BsQrCode, BsPersonPlus, BsCheck2Circle, BsCheckCircle, BsExclamationTriangle, BsX } from 'react-icons/bs';
+import { BsPerson, BsBoxSeam, BsTruck, BsQrCode, BsPersonPlus, BsCheck2Circle, BsCheckCircle, BsExclamationTriangle, BsX, BsPrinter } from 'react-icons/bs';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import QRCode from 'react-qr-code';
+import logo from '../../assets/images/KMDelivery.png';
 import './AdminProducts.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -60,12 +61,26 @@ export default function AdminProducts(){
   const doAssign = async ()=>{
     if (!assignTo) return alert('Select a delivery person');
     try{
+      // Assign the product to delivery person
       await axios.post(`${API_BASE}/api/v1/products/${assignProduct._id}/assign`, { deliveryPersonId: assignTo }, headers());
+      
+      // Automatically update status to "Picked" when assigned
+      await axios.patch(`${API_BASE}/api/v1/products/${assignProduct._id}/status`, { status: 'Picked' }, headers());
+      
       setShowAssign(false);
+      setAssignTo('');
+      setAssignProduct(null);
+      
       // refresh
       loadProducts(selectedClient?._id);
       loadDeliveryPersons();
-    }catch(err){ console.error('assign', err); alert('Assign failed'); }
+      
+      // Show success message
+      alert('Product assigned successfully and status updated to "Picked"');
+    }catch(err){ 
+      console.error('assign', err); 
+      alert('Assignment failed'); 
+    }
   };
 
   // Status options for dropdown
@@ -87,13 +102,188 @@ export default function AdminProducts(){
   // Handle status update
   const handleUpdateStatus = async (productId, newStatus) => {
     try {
-      await axios.put(`${API_BASE}/api/v1/products/${productId}`, { status: newStatus }, headers());
+      await axios.patch(`${API_BASE}/api/v1/products/${productId}/status`, { status: newStatus }, headers());
       // Refresh products after status update
       loadProducts(selectedClient?._id);
+      alert('Status updated successfully!');
     } catch (error) {
       console.error('Failed to update product status:', error);
       alert('Failed to update status');
     }
+  };
+
+  const printInvoice = (product) => {
+    // Create a new window for the invoice
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    
+    const currentDate = new Date().toLocaleDateString();
+    
+    // Try to generate QR code SVG using online service
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(product.qrData)}`;
+    
+    const invoiceHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Invoice - ${product.name}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 20px;
+              background: white;
+            }
+            .invoice-container {
+              max-width: 800px;
+              margin: 0 auto;
+              background: white;
+              border: 2px solid #333;
+              padding: 30px;
+            }
+            .invoice-header {
+              text-align: center;
+              border-bottom: 2px solid #333;
+              padding-bottom: 20px;
+              margin-bottom: 30px;
+            }
+            .company-info {
+              text-align: center;
+              margin-bottom: 20px;
+            }
+            .company-name {
+              font-size: 24px;
+              font-weight: bold;
+              color: #333;
+              margin-bottom: 5px;
+            }
+            .invoice-title {
+              font-size: 32px;
+              font-weight: bold;
+              color: #007bff;
+              margin: 10px 0;
+            }
+            .invoice-details {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 30px;
+            }
+            .invoice-info, .product-info {
+              flex: 1;
+            }
+            .qr-section {
+              text-align: center;
+              margin: 20px 0;
+              padding: 20px;
+              border: 2px dashed #007bff;
+              background: #f8f9fa;
+            }
+            .product-details {
+              background: #f8f9fa;
+              padding: 20px;
+              border-radius: 8px;
+              margin: 20px 0;
+            }
+            .detail-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 8px 0;
+              border-bottom: 1px solid #ddd;
+            }
+            .detail-row:last-child {
+              border-bottom: none;
+              font-weight: bold;
+              font-size: 18px;
+              color: #007bff;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 40px;
+              padding-top: 20px;
+              border-top: 2px solid #333;
+            }
+
+            @media print {
+              body { margin: 0; }
+              .invoice-container { border: none; box-shadow: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-container">
+            <div class="invoice-header">
+              <div class="company-info">
+                <img src="${window.location.origin}/logo.png" alt="KM Delivery Logo" style="height: 60px; width: auto; margin-bottom: 10px;" />
+                <div>Professional Delivery Solutions</div>
+              </div>
+              <div class="invoice-title">DELIVERY INVOICE</div>
+              <div>Date: ${currentDate}</div>
+            </div>
+            
+            <div class="invoice-details">
+              <div class="invoice-info">
+                <h4>Product Information:</h4>
+                <p><strong>Product:</strong> ${product.name}</p>
+                <p><strong>Assigned To:</strong> ${product.assignedTo?.name || 'Unassigned'}</p>
+              </div>
+              <div class="product-info">
+                <h4>Customer Details:</h4>
+                <p><strong>Customer:</strong> ${product.buyerName || 'N/A'}</p>
+                <p><strong>Phone:</strong> ${product.buyerPhone || 'N/A'}</p>
+                <p><strong>Address:</strong> ${product.buyerAddress || 'N/A'}</p>
+              </div>
+            </div>
+            
+            <div class="qr-section">
+              <h4>Product QR Code</h4>
+              <div style="display: inline-block; padding: 10px; background: white; border: 2px solid #333;">
+                <img src="${qrApiUrl}" alt="QR Code for ${product.name}" style="width: 120px; height: 120px; display: block;" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <div style="width: 120px; height: 120px; border: 1px dashed #ccc; display: none; align-items: center; justify-content: center; font-size: 12px; color: #666; text-align: center;">
+                  QR Code<br/>for<br/>${product.name}
+                </div>
+              </div>
+              <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                Scan this QR code for product tracking and verification
+              </p>
+            </div>
+            
+            <div class="product-details">
+              <h4>Financial Details</h4>
+              <div class="detail-row">
+                <span>Product Price:</span>
+                <span>${product.price} TND</span>
+              </div>
+              <div class="detail-row">
+                <span>Delivery Fee:</span>
+                <span>0 TND</span>
+              </div>
+              <div class="detail-row">
+                <span>Total Amount:</span>
+                <span>${product.price} TND</span>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <p><strong>Thank you for choosing our delivery service!</strong></p>
+              <p style="font-size: 12px; color: #666;">
+                This invoice serves as confirmation of delivery service for the above product.
+                Keep this document for your records.
+              </p>
+            </div>
+          </div>
+          
+          <script>
+            // Auto print when page loads
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(invoiceHTML);
+    printWindow.document.close();
   };
 
   return (
@@ -230,65 +420,27 @@ export default function AdminProducts(){
                                   <BsQrCode className="me-1" />
                                   {t('admin.qr')}
                                 </Button>
-                                <Dropdown align="end">
-                                  <Dropdown.Toggle 
+                                {p.assignedTo ? (
+                                  <Button 
+                                    size="sm" 
+                                    variant="success"
+                                    className="assigned-button"
+                                    disabled
+                                  >
+                                    <BsCheckCircle className="me-1" />
+                                    {t('admin.assigned')}
+                                  </Button>
+                                ) : (
+                                  <Button 
                                     size="sm" 
                                     variant="primary"
                                     className="assign-button"
+                                    onClick={() => openAssign(p)}
                                   >
                                     <BsPersonPlus className="me-1" />
-                                    Actions
-                                  </Dropdown.Toggle>
-                                  <Dropdown.Menu className="actions-dropdown-menu">
-                                    <Dropdown.Item 
-                                      onClick={() => openAssign(p)}
-                                      className="action-dropdown-item"
-                                    >
-                                      <BsPersonPlus className="me-2" />
-                                      {t('admin.assign')}
-                                    </Dropdown.Item>
-                                    <Dropdown.Divider />
-                                    <Dropdown.Item 
-                                      onClick={() => handleUpdateStatus(p._id, 'Picked')}
-                                      disabled={p.status === 'Picked'}
-                                      className="action-dropdown-item"
-                                    >
-                                      <BsCheck2Circle className="me-2" />
-                                      Mark as Picked
-                                    </Dropdown.Item>
-                                    <Dropdown.Item 
-                                      onClick={() => handleUpdateStatus(p._id, 'Out for Delivery')}
-                                      disabled={p.status === 'Out for Delivery'}
-                                      className="action-dropdown-item"
-                                    >
-                                      <BsTruck className="me-2" />
-                                      Out for Delivery
-                                    </Dropdown.Item>
-                                    <Dropdown.Item 
-                                      onClick={() => handleUpdateStatus(p._id, 'Delivered')}
-                                      disabled={p.status === 'Delivered'}
-                                      className="action-dropdown-item"
-                                    >
-                                      <BsCheckCircle className="me-2" />
-                                      Mark as Delivered
-                                    </Dropdown.Item>
-                                    <Dropdown.Divider />
-                                    <Dropdown.Item 
-                                      onClick={() => handleUpdateStatus(p._id, 'Problem')}
-                                      className="action-dropdown-item text-warning"
-                                    >
-                                      <BsExclamationTriangle className="me-2" />
-                                      Report Problem
-                                    </Dropdown.Item>
-                                    <Dropdown.Item 
-                                      onClick={() => handleUpdateStatus(p._id, 'Failed/Returned')}
-                                      className="action-dropdown-item text-danger"
-                                    >
-                                      <BsX className="me-2" />
-                                      Mark as Failed
-                                    </Dropdown.Item>
-                                  </Dropdown.Menu>
-                                </Dropdown>
+                                    {t('admin.assign')}
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -319,11 +471,12 @@ export default function AdminProducts(){
         </Modal.Header>
         <Modal.Body className="modal-body-enhanced">
           {selected && (
-            <div className="d-flex gap-4 align-items-start">
-              <div className="qr-container">
-                <QRCode value={selected.qrData} size={200} />
-              </div>
-              <div className="product-details">
+            <div>
+              <div className="d-flex gap-4 align-items-start mb-3">
+                <div className="qr-container">
+                  <QRCode value={selected.qrData} size={200} />
+                </div>
+                <div className="product-details">
                 <h5 className="product-title">{selected.name}</h5>
                 <div className="detail-item">
                   <strong>Price:</strong> <span className="price-value">{selected.price} {t('common.currency')}</span>
@@ -346,6 +499,17 @@ export default function AdminProducts(){
                 <div className="detail-item">
                   <strong>Assigned To:</strong> {selected.assignedTo?.name || 'Unassigned'}
                 </div>
+              </div>
+              </div>
+              <div className="text-center mt-3">
+                <Button 
+                  onClick={() => printInvoice(selected)}
+                  className="print-invoice-btn"
+                  size="md"
+                >
+                  <BsPrinter className="me-2" />
+                  {t('admin.printInvoice') || 'Print Invoice'}
+                </Button>
               </div>
             </div>
           )}
@@ -383,6 +547,12 @@ export default function AdminProducts(){
                     <option key={d._id} value={d._id}>{d.name} ({d.email})</option>
                   ))}
                 </Form.Select>
+                <div className="mt-3 p-2 bg-light rounded">
+                  <small className="text-muted">
+                    <BsCheck2Circle className="me-1 text-success" />
+                    <strong>Note:</strong> {t('admin.assignmentNote')}
+                  </small>
+                </div>
               </Form.Group>
             </div>
           )}

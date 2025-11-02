@@ -152,7 +152,7 @@ export default function ManageDeliveries() {
   // Handle status update
   const handleUpdateStatus = async (productId, newStatus) => {
     try {
-      await apiClient.put(`/api/v1/products/${productId}`, { status: newStatus });
+      await apiClient.patch(`/api/v1/products/${productId}/status`, { status: newStatus });
       toast.success(t('messages.statusUpdated'));
       loadProducts();
     } catch (error) {

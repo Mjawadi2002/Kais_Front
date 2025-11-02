@@ -176,6 +176,9 @@
     "userDeleted": "User deleted",
     "deleteFailed": "Delete failed",
     "failedToLoadUsers": "Failed to load users",
-    "deliveryPerson": "Delivery Person"
+    "deliveryPerson": "Delivery Person",
+    "printInvoice": "Print Invoice",
+    "assigned": "Assigned",
+    "assignmentNote": "When you assign this product, its status will automatically be updated to \"Picked\" and ready for delivery."
   }
 }

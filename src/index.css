@@ -274,3 +274,27 @@ body{
 .badge.bg-info{ color: #0c5460; }
 .badge.bg-warning{ color: #856404; }
 .table-row-hover:hover{ background: #f7fbff; transform: translateY(-1px); }
+
+/* Logo styles */
+.login-logo-img {
+  max-height: 80px;
+  width: auto;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
+  transition: transform 0.3s ease;
+}
+
+.login-logo-img:hover {
+  transform: scale(1.05);
+}
+
+.app-logo {
+  height: 35px;
+  width: auto;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.1));
+}
+
+.sidebar-logo {
+  height: 45px;
+  width: auto;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}

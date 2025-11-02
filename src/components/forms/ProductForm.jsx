@@ -37,23 +37,23 @@ export default function ProductForm({ onCreated }){
 
   return (
     <>
-      <Form onSubmit={submit} className="enhanced-product-form">
-        <Form.Group className="mb-3 form-group-enhanced">
-          <Form.Label className="form-label-enhanced">{t('products.productName')}</Form.Label>
+      <Form onSubmit={submit}>
+        <div className="enhanced-form-group">
+          <label className="enhanced-form-label">{t('products.productName')}</label>
           <Form.Control 
-            className="form-control-enhanced"
+            className="enhanced-form-control"
             value={form.name} 
             onChange={e=>setForm({...form, name: e.target.value})} 
             required 
             placeholder={`${t('common.name')}...`}
           />
-        </Form.Group>
+        </div>
         
-        <Form.Group className="mb-3 form-group-enhanced">
-          <Form.Label className="form-label-enhanced">{t('common.price')}</Form.Label>
+        <div className="enhanced-form-group">
+          <label className="enhanced-form-label">{t('common.price')}</label>
           <div className="input-group">
             <Form.Control 
-              className="form-control-enhanced"
+              className="enhanced-form-control"
               type="number" 
               min={0} 
               step="0.01"
@@ -62,24 +62,24 @@ export default function ProductForm({ onCreated }){
               required 
               placeholder="0.00"
             />
-            <span className="input-group-text">{t('common.currency')}</span>
+            <span className="currency-addon">TND</span>
           </div>
-        </Form.Group>
+        </div>
         
-        <Form.Group className="mb-3 form-group-enhanced">
-          <Form.Label className="form-label-enhanced">{t('products.buyerName')}</Form.Label>
+        <div className="enhanced-form-group">
+          <label className="enhanced-form-label">{t('products.buyerName')}</label>
           <Form.Control 
-            className="form-control-enhanced"
+            className="enhanced-form-control"
             value={form.buyerName} 
             onChange={e=>setForm({...form, buyerName: e.target.value})} 
             placeholder={`${t('products.buyerName')}...`}
           />
-        </Form.Group>
+        </div>
         
-        <Form.Group className="mb-3 form-group-enhanced">
-          <Form.Label className="form-label-enhanced">{t('products.buyerAddress')}</Form.Label>
+        <div className="enhanced-form-group">
+          <label className="enhanced-form-label">{t('products.buyerAddress')}</label>
           <Form.Control 
-            className="form-control-enhanced"
+            className="enhanced-textarea"
             as="textarea" 
             rows={3} 
             value={form.buyerAddress} 
@@ -87,29 +87,33 @@ export default function ProductForm({ onCreated }){
             required 
             placeholder={`${t('products.buyerAddress')}...`}
           />
-        </Form.Group>
+        </div>
         
-        <Form.Group className="mb-4 form-group-enhanced">
-          <Form.Label className="form-label-enhanced">{t('products.buyerPhone')}</Form.Label>
+        <div className="enhanced-form-group">
+          <label className="enhanced-form-label">{t('products.buyerPhone')}</label>
           <Form.Control 
-            className="form-control-enhanced"
+            className="enhanced-form-control"
             value={form.buyerPhone} 
             onChange={e=>setForm({...form, buyerPhone: e.target.value})} 
             required 
             placeholder="+216 XX XXX XXX"
           />
-        </Form.Group>
-        
-        <div className="d-grid">
-          <Button 
-            type="submit" 
-            disabled={loading}
-            className="btn-create-product"
-            size="lg"
-          >
-            {loading ? t('products.creating') : t('products.createProduct')}
-          </Button>
         </div>
+        
+        <Button 
+          type="submit" 
+          disabled={loading}
+          className="enhanced-submit-btn"
+        >
+          {loading ? (
+            <>
+              <span className="loading-spinner"></span>
+              Creating Product...
+            </>
+          ) : (
+            t('products.createProduct')
+          )}
+        </Button>
       </Form>
     </>
   );

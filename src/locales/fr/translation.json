@@ -176,6 +176,9 @@
     "userDeleted": "Utilisateur supprimé",
     "deleteFailed": "Échec de suppression",
     "failedToLoadUsers": "Échec du chargement des utilisateurs",
-    "deliveryPerson": "Livreur"
+    "deliveryPerson": "Livreur",
+    "printInvoice": "Imprimer Facture",
+    "assigned": "Assigné",
+    "assignmentNote": "Lorsque vous assignez ce produit, son statut sera automatiquement mis à jour vers \"Récupéré\" et prêt pour la livraison."
   }
 }

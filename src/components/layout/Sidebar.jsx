@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BsSpeedometer2, BsPeople, BsBox, BsTruck, BsX } from 'react-icons/bs';
 import { useAuth } from '../../context/AuthContext';
+import logo from '../../assets/images/KMDelivery.png';
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth();
@@ -44,7 +45,9 @@ export default function Sidebar({ isOpen, onClose }) {
         <div className="sidebar-header p-4 border-bottom">
           <div className="d-flex justify-content-between align-items-start">
             <div className="flex-grow-1">
-              <h4 className="mb-1 fw-bold text-primary">Kais Delivery</h4>
+              <div className="mb-2">
+                <img src={logo} alt="KM Delivery" className="sidebar-logo" />
+              </div>
               <div className="d-flex align-items-center">
                 <div className="user-avatar me-2">
                   <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 

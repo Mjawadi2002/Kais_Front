@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BsBell, BsPersonCircle, BsList } from 'react-icons/bs';
 import LanguageSwitcher from '../LanguageSwitcher';
+import logo from '../../assets/images/KMDelivery.png';
 
 export default function Topbar({ onToggleSidebar }) {
   const { user, logout } = useAuth();
@@ -31,9 +32,9 @@ export default function Topbar({ onToggleSidebar }) {
         </Button>
 
         {/* Brand/Title */}
-        <div className="me-auto">
-          <strong className="d-none d-md-block">Kais Delivery</strong>
-          <strong className="d-md-none">Dashboard</strong>
+        <div className="me-auto d-flex align-items-center">
+          <img src={logo} alt="KM Delivery" className="app-logo d-none d-md-block" />
+          <img src={logo} alt="KM Delivery" className="app-logo d-md-none" style={{height: '30px'}} />
         </div>
 
         {/* Search bar (desktop only) */}

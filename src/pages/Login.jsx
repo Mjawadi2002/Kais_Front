@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import apiClient from '../config/apiClient';
 import config from '../config/config';
 import { BsBoxArrowInRight, BsPersonFill, BsEye, BsEyeSlash, BsLock } from 'react-icons/bs';
+import logo from '../assets/images/KMDelivery.png';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -68,7 +69,7 @@ export default function Login() {
               <Card.Body className="p-5">
                 <div className="text-center mb-4">
                   <div className="login-logo mb-3">
-                    <div className="brand-logo display-4">Kais Delivery</div>
+                    <img src={logo} alt="KM Delivery Logo" className="login-logo-img mb-2" />
                     <div className="small-muted fs-6">Delivery management system</div>
                   </div>
                 </div>

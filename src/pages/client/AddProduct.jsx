@@ -1,5 +1,6 @@
 import React from 'react';
 import { Container, Row, Col, Card } from 'react-bootstrap';
+import { BsBoxSeam, BsPlus } from 'react-icons/bs';
 import { useTranslation } from 'react-i18next';
 import ProductForm from '../../components/forms/ProductForm';
 import './AddProduct.css';
@@ -8,19 +9,26 @@ export default function AddProduct(){
   const { t } = useTranslation();
 
   return (
-    <Container>
-      <Row className="mb-4">
-        <Col>
-          <h3 className="mb-1">{t('products.addNewProduct')}</h3>
-          <p className="text-muted mb-0">{t('products.addProductSubtitle')}</p>
-        </Col>
-      </Row>
+    <Container fluid className="add-product-container">
+      {/* Enhanced Header Section */}
+      <div className="add-product-header">
+        <h1 className="page-title">
+          <BsPlus className="me-3" />
+          Add New Product
+        </h1>
+        <p className="page-subtitle">Fill in the product details to add it to your inventory</p>
+      </div>
+
       <Row className="justify-content-center">
-        <Col md={8} lg={6}>
-          <Card className="shadow-lg border-0 product-form-card">
-            <Card.Body className="p-4">
+        <Col xl={6} lg={7} md={8} sm={10}>
+          <Card className="product-form-card">
+            <div className="form-container">
+              <div className="form-title">
+                <BsBoxSeam size={32} className="text-primary mb-3" />
+                <h3>Product Information</h3>
+              </div>
               <ProductForm onCreated={(p)=>{ /* future: maybe navigate to products list */ }} />
-            </Card.Body>
+            </div>
           </Card>
         </Col>
       </Row>
