@@ -10,8 +10,7 @@ lerna-debug.log*
 /build
 /dist
 
-# Environment variables
-.env
+# Environment variables (keep .env files for environment-specific configs)
 .env.local
 .env.development.local
 .env.test.local

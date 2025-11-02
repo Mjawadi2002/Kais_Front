@@ -3,10 +3,9 @@ import { Container, Card, Form, Button, Row, Col, InputGroup } from 'react-boots
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import apiClient from '../config/apiClient';
+import config from '../config/config';
 import { BsBoxArrowInRight, BsPersonFill, BsEye, BsEyeSlash, BsLock } from 'react-icons/bs';
-
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,11 +19,11 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const resp = await axios.post(`${API_BASE}/api/v1/auth/login`, { email, password });
+      const resp = await apiClient.post('/api/v1/auth/login', { email, password });
       const data = resp.data;
       // data: { token, user }
       login(data.user, data.token);
-      toast.success('Logged in');
+      toast.success(`Welcome ${data.user.name}! (${config.IS_DEVELOPMENT ? 'DEV' : 'PROD'})`);
       if (data.user.role === 'admin') navigate('/admin');
       else if (data.user.role === 'client') navigate('/client');
       else if (data.user.role === 'delivery') navigate('/delivery');
