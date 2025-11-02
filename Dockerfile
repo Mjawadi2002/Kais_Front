@@ -19,7 +19,8 @@ COPY . .
 RUN npm run build
 
 # Remove dev dependencies after build
-RUN npm prune --omit=dev
+# Use --legacy-peer-deps to avoid the same ERESOLVE conflicts during pruning
+RUN npm prune --omit=dev --legacy-peer-deps
 
 # Expose the port the app runs on
 EXPOSE 3000
