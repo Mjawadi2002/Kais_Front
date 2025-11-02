@@ -8,8 +8,9 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies needed for build)
-# Using npm install instead of npm ci to handle version conflicts
-RUN npm install
+# Use --legacy-peer-deps to avoid ERESOLVE peer dependency failures during the build
+# (Alternative: pin TypeScript to a v4.x in package.json to satisfy react-scripts@5)
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 # Copy the rest of the application code
 COPY . .
