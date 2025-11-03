@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
+
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -41,9 +42,9 @@ export default function Layout({ children }) {
   return (
     <div className="d-flex" style={{ minHeight: '100vh' }}>
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex-grow-1" style={{ minWidth: 0 }}>
+      <div className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0 }}>
         <Topbar onToggleSidebar={toggleSidebar} />
-        <main className="p-3 p-md-4" style={{ background: '#f8f9fa' }}>
+        <main className="flex-grow-1 p-3 p-md-4" style={{ background: '#f8f9fa' }}>
           <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
             {children}
           </div>

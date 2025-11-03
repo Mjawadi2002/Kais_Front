@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Container, Row, Col, Table, Badge, Button, Modal, Form, InputGroup, Dropdown } from 'react-bootstrap';
+import { Container, Row, Col, Table, Badge, Button, Modal, Form, InputGroup } from 'react-bootstrap';
 import { 
   BsBoxSeam, 
   BsTruck, 
@@ -87,103 +87,16 @@ function StatusBadge({ status, product, onStatusChange, isDeliveryPerson = false
     }
   };
 
-  // Define available status transitions based on current status and user role
-  const getAvailableStatuses = (currentStatus) => {
-    // Backend ProductController.updateStatus allows only these statuses
-    const allowedStatuses = PRODUCT_STATUSES;
-
-    // If delivery person, show logical progression
-    if (isDeliveryPerson) {
-      switch (currentStatus) {
-        case 'pending':
-          return ['assigned', 'cancelled'];
-        case 'assigned':
-          return ['in_transit', 'cancelled'];
-        case 'in_transit':
-          return ['delivered', 'failed', 'cancelled'];
-        case 'delivered':
-          return ['failed']; // Allow reporting issues with delivered items
-        case 'cancelled':
-          return ['pending', 'assigned'];
-        case 'failed':
-          return ['pending', 'assigned', 'in_transit'];
-        // Handle legacy statuses for backward compatibility
-        case 'In Stock':
-          return ['assigned', 'cancelled'];
-        case 'Picked':
-          return ['in_transit', 'cancelled'];
-        case 'Out for Delivery':
-          return ['delivered', 'failed', 'cancelled'];
-        case 'Delivered':
-          return ['failed'];
-        case 'Problem':
-          return ['pending', 'assigned', 'in_transit'];
-        case 'Failed/Returned':
-          return ['pending', 'assigned', 'in_transit'];
-        default:
-          return allowedStatuses.filter(s => s !== currentStatus);
-      }
-    }
-
-    // For admin users, allow all backend-allowed status changes
-    return allowedStatuses.filter(s => s !== currentStatus);
-  };
-
-  const availableStatuses = getAvailableStatuses(status);
-
-  const handleStatusChange = (newStatus) => {
-    console.log('Changing status from', status, 'to', newStatus, 'for product', product._id);
-    if (onStatusChange) {
-      onStatusChange(product, newStatus);
-    } else {
-      console.error('onStatusChange function not provided');
-    }
-  };
-
-  const handleToggle = (isOpen) => {
-    // Add/remove class to table row for z-index management
-    const tableRow = document.querySelector(`tr[data-product-id="${product._id}"]`);
-    if (tableRow) {
-      if (isOpen) {
-        tableRow.classList.add('dropdown-open');
-      } else {
-        tableRow.classList.remove('dropdown-open');
-      }
-    }
-  };
-
-  // Always render as dropdown for testing
+  // Render as simple badge without dropdown
   return (
-    <div className="status-badge-wrapper">
-      <Dropdown onToggle={handleToggle}>
-        <Dropdown.Toggle 
-          as="div"
-          className={`status-badge-clickable bg-${getStatusBadgeVariant(status)}`}
-        >
-          {getStatusIcon(status)}
-          <span className="ms-1">{status}</span>
-          <span className="dropdown-arrow">▼</span>
-        </Dropdown.Toggle>
-
-        <Dropdown.Menu>
-          <Dropdown.Header>Change Status To:</Dropdown.Header>
-          {availableStatuses.length === 0 ? (
-            <Dropdown.ItemText>No status changes available</Dropdown.ItemText>
-          ) : (
-            availableStatuses.map(newStatus => (
-              <Dropdown.Item 
-                key={newStatus}
-                onClick={() => handleStatusChange(newStatus)}
-                className="d-flex align-items-center"
-              >
-                <span className="me-2">{getStatusIcon(newStatus)}</span>
-                {newStatus}
-              </Dropdown.Item>
-            ))
-          )}
-        </Dropdown.Menu>
-      </Dropdown>
-    </div>
+    <Badge 
+      bg={getStatusBadgeVariant(status)}
+      className="d-flex align-items-center gap-1 px-3 py-2"
+      style={{ fontSize: '0.875rem', fontWeight: '500' }}
+    >
+      {getStatusIcon(status)}
+      <span>{status}</span>
+    </Badge>
   );
 }
 
@@ -225,7 +138,12 @@ export default function AssignedDeliveries() {
       status: product.status,
       deliveryCode: product.deliveryCode || Math.random().toString(36).substring(7),
       assignedTo: product.assignedTo?.username || user?.username,
-      client: product.client?.name || product.client?.email || 'Unknown'
+      client: product.client?.name || product.client?.email || 'Unknown',
+      buyer: {
+        name: product.buyerName || 'N/A',
+        phone: product.buyerPhone || 'N/A', 
+        address: product.buyerAddress || 'N/A'
+      }
     });
     
     setQrCode(qrData);
@@ -606,6 +524,25 @@ export default function AssignedDeliveries() {
                 <div className="col-12">
                   <strong>Product ID:</strong><br />
                   <code>{selectedProduct._id}</code>
+                </div>
+                <div className="col-12">
+                  <hr className="my-2" />
+                  <strong>
+                    <BsPerson className="me-2" />
+                    Buyer Information:
+                  </strong>
+                </div>
+                <div className="col-12">
+                  <strong>Name:</strong><br />
+                  <span>{selectedProduct.buyerName || 'N/A'}</span>
+                </div>
+                <div className="col-6">
+                  <strong>Phone:</strong><br />
+                  <span>{selectedProduct.buyerPhone || 'N/A'}</span>
+                </div>
+                <div className="col-6">
+                  <strong>Address:</strong><br />
+                  <span>{selectedProduct.buyerAddress || 'N/A'}</span>
                 </div>
               </div>
             </div>

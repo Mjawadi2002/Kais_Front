@@ -211,199 +211,48 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* Status Badge Dropdown */
-.enhanced-status-badge.dropdown-toggle-no-arrow::after {
-  display: none;
-}
-
-.enhanced-status-badge.dropdown-toggle {
-  cursor: pointer !important;
-}
-
-.enhanced-status-badge.dropdown-toggle:hover {
-  opacity: 0.9;
-}
-
-.enhanced-status-dropdown-toggle {
-  border-radius: 25px !important;
-  font-weight: 600 !important;
-  font-size: 0.8rem !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  border: 2px solid transparent !important;
-  padding: 0.5rem 1rem !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-}
-
-.enhanced-status-dropdown-toggle:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-}
-
-.enhanced-status-dropdown-toggle::after {
-  margin-left: 0.5rem !important;
-}
-
-/* Status Badge Wrapper */
-.status-badge-wrapper {
-  display: inline-block;
-  position: relative;
-  z-index: 1000;
-}
-
-.status-badge-wrapper .dropdown {
-  position: relative;
-  z-index: 1001;
-}
-
-.status-badge-wrapper .dropdown.show {
-  z-index: 9999;
-}
-
-.status-badge-wrapper .dropdown-menu.show {
-  z-index: 10000 !important;
-  position: absolute !important;
-  will-change: transform;
-}
-
-/* Ensure table rows don't interfere with dropdown positioning */
-.enhanced-deliveries-table tbody tr {
-  position: relative;
-  z-index: 1;
-}
-
-.enhanced-deliveries-table tbody tr:has(.dropdown.show) {
-  z-index: 9998;
-}
-
-/* Alternative for browsers that don't support :has() */
-.enhanced-deliveries-table tbody tr.dropdown-open {
-  z-index: 9998;
-}
-
-.status-badge-clickable {
-  padding: 0.5rem 1rem;
-  border-radius: 25px;
-  font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  user-select: none;
-  color: white;
-}
-
-.status-badge-clickable:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  color: white;
-}
-
-.status-badge-clickable .dropdown-arrow {
-  margin-left: 0.5rem;
-  font-size: 0.6rem;
-  opacity: 0.7;
-}
-
-.status-badge-clickable.bg-success {
+/* Custom status badge colors with gradients */
+.badge.bg-success {
   background: linear-gradient(135deg, #84fab0, #8fd3f4) !important;
   color: white !important;
 }
 
-.status-badge-clickable.bg-primary {
+.badge.bg-primary {
   background: linear-gradient(135deg, #667eea, #764ba2) !important;
   color: white !important;
 }
 
-.status-badge-clickable.bg-info {
+.badge.bg-info {
   background: linear-gradient(135deg, #a8edea, #fed6e3) !important;
   color: #2d3748 !important;
 }
 
-.status-badge-clickable.bg-warning {
+.badge.bg-warning {
   background: linear-gradient(135deg, #ffd89b, #19547b) !important;
   color: white !important;
 }
 
-.status-badge-clickable.bg-danger {
+.badge.bg-danger {
   background: linear-gradient(135deg, #ff9a9e, #fecfef) !important;
   color: white !important;
 }
 
-.status-badge-clickable.bg-dark {
+.badge.bg-dark {
   background: linear-gradient(135deg, #4c4c4c, #2c2c2c) !important;
   color: white !important;
 }
 
-.status-badge-clickable.bg-secondary {
+.badge.bg-secondary {
   background: linear-gradient(135deg, #6c757d, #495057) !important;
   color: white !important;
 }
 
-.dropdown-menu {
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  padding: 0.5rem 0;
-  z-index: 9999 !important;
-  position: absolute !important;
+/* Status Badge - Simple Display */
+.status-badge-wrapper {
+  display: inline-block;
 }
 
-.dropdown-header {
-  font-weight: 600;
-  color: #4a5568;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 0.5rem 1rem;
-}
 
-.dropdown-item {
-  padding: 0.6rem 1rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.dropdown-item:hover {
-  background: linear-gradient(135deg, #f7fafc, #edf2f7);
-  color: #2d3748;
-}
-
-.enhanced-status-badge.bg-warning {
-  background: linear-gradient(135deg, #ffd89b, #19547b) !important;
-  color: white !important;
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.enhanced-status-badge.bg-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2) !important;
-  color: white !important;
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.enhanced-status-badge.bg-success {
-  background: linear-gradient(135deg, #84fab0, #8fd3f4) !important;
-  color: white !important;
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.enhanced-status-badge.bg-info {
-  background: linear-gradient(135deg, #a8edea, #fed6e3) !important;
-  color: #2d3748 !important;
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
-.enhanced-status-badge.bg-danger {
-  background: linear-gradient(135deg, #ff9a9e, #fecfef) !important;
-  color: white !important;
-  border-color: rgba(255, 255, 255, 0.3);
-}
 
 /* Action Buttons */
 .action-buttons {
