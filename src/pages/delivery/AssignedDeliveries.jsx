@@ -1,557 +1,271 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Container, Row, Col, Table, Badge, Button, Modal, Form, InputGroup } from 'react-bootstrap';
-import { 
-  BsBoxSeam, 
-  BsTruck, 
-  BsCheckCircle, 
-  BsQrCode, 
-  BsExclamationTriangle,
-  BsArrowUp,
-  BsPerson,
-  BsCalendar,
-  BsGeoAlt,
-  BsFilter,
-  BsSearch
-} from 'react-icons/bs';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { BsBoxSeam, BsTruck, BsCheckCircle, BsQrCode, BsExclamationTriangle, BsGeoAlt, BsSearch, BsX, BsFilter } from 'react-icons/bs';
 import axios from 'axios';
 import QRCode from 'react-qr-code';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
-import './AssignedDeliveries.css';
+import StatusBadge from '../../components/common/StatusBadge';
+import PageWrapper from '../../components/common/PageWrapper';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-// Backend defined delivery statuses (from DeliveryModel.js enum)
-const DELIVERY_STATUSES = [
-  'pending',
-  'assigned', 
-  'in_transit',
-  'delivered',
-  'cancelled',
-  'failed'
-];
+const PRODUCT_STATUSES = ['Picked', 'Out for Delivery', 'Delivered', 'Problem', 'Failed/Returned'];
 
-// Backend defined product statuses (must match ProductController.js updateStatus allowed array)
-const PRODUCT_STATUSES = [
-  'Picked',
-  'Out for Delivery', 
-  'Delivered',
-  'Problem',
-  'Failed/Returned'
-];
-
-// All possible statuses from ProductModel (including 'In Stock' which is default but not updatable by delivery person)
-const ALL_PRODUCT_STATUSES = [
-  'In Stock',
-  'Picked',
-  'Out for Delivery',
-  'Delivered',
-  'Problem',
-  'Failed/Returned'
-];
-
-function StatusBadge({ status, product, onStatusChange, isDeliveryPerson = false }){
-  const getStatusBadgeVariant = (status) => {
-    switch (status) {
-      case 'delivered': return 'success';
-      case 'in_transit': return 'primary';
-      case 'assigned': return 'info';
-      case 'pending': return 'warning';
-      case 'cancelled': return 'danger';
-      case 'failed': return 'dark';
-      // Legacy product statuses (for backward compatibility)
-      case 'Delivered': return 'success';
-      case 'Out for Delivery': return 'primary';
-      case 'Picked': return 'info';
-      case 'Problem': return 'danger';
-      case 'In Stock': return 'warning';
-      case 'Failed/Returned': return 'dark';
-      default: return 'secondary';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'delivered': return <BsCheckCircle />;
-      case 'in_transit': return <BsTruck />;
-      case 'assigned': return <BsArrowUp />;
-      case 'pending': return <BsBoxSeam />;
-      case 'cancelled': return <BsExclamationTriangle />;
-      case 'failed': return <BsExclamationTriangle />;
-      // Legacy product statuses (for backward compatibility)
-      case 'Delivered': return <BsCheckCircle />;
-      case 'Out for Delivery': return <BsTruck />;
-      case 'Picked': return <BsArrowUp />;
-      case 'Problem': return <BsExclamationTriangle />;
-      default: return <BsBoxSeam />;
-    }
-  };
-
-  // Render as simple badge without dropdown
+function Modal({ show, onClose, title, children }) {
+  useEffect(() => {
+    document.body.style.overflow = show ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [show]);
+  if (!show) return null;
   return (
-    <Badge 
-      bg={getStatusBadgeVariant(status)}
-      className="d-flex align-items-center gap-1 px-3 py-2"
-      style={{ fontSize: '0.875rem', fontWeight: '500' }}
-    >
-      {getStatusIcon(status)}
-      <span>{status}</span>
-    </Badge>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm animate-slide-up">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+          <h5 className="font-semibold text-slate-900 dark:text-white text-sm">{title}</h5>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-colors">
+            <BsX size={18} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
   );
 }
 
 export default function AssignedDeliveries() {
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
-  const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [qrCode, setQrCode] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [clientFilter, setClientFilter] = useState('all');
+  const [qrProduct, setQrProduct] = useState(null);
+  const [detailProduct, setDetailProduct] = useState(null);
 
-  const headers = useCallback(() => ({ headers: { Authorization: `Bearer ${user?.token}` } }), [user?.token]);
+  const getToken = () => localStorage.getItem('rf_access_token') || user?.token;
 
   const load = useCallback(async () => {
+    if (!user?.id) return;
     try {
       setLoading(true);
-      const resp = await axios.get(`${API_BASE}/api/v1/products`, headers());
-      const allProducts = resp.data.products || [];
-      // Filter products assigned to current delivery person
-      const assigned = allProducts.filter(p => 
-        p.assignedTo?._id === user?.id || 
-        p.deliveryPerson?._id === user?.id
-      );
-      setProducts(assigned);
-    } catch (err) {
-      console.error('Failed to load products:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id, user?.token]);
+      const res = await axios.get(`${API_BASE}/api/v1/products`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const all = res.data.products || [];
+      setProducts(all.filter(p => p.assignedTo?._id === user.id || p.assignedTo === user.id));
+    } catch { /* silent */ }
+    finally { setLoading(false); }
+  }, [user?.id]);
 
-  const generateQRCode = useCallback((product) => {
-    const qrData = JSON.stringify({
-      id: product._id,
-      name: product.name,
-      status: product.status,
-      deliveryCode: product.deliveryCode || Math.random().toString(36).substring(7),
-      assignedTo: product.assignedTo?.username || user?.username,
-      client: product.client?.name || product.client?.email || 'Unknown',
-      buyer: {
-        name: product.buyerName || 'N/A',
-        phone: product.buyerPhone || 'N/A', 
-        address: product.buyerAddress || 'N/A'
-      }
-    });
-    
-    setQrCode(qrData);
-    setSelectedProduct(product);
-    setQrModalOpen(true);
-  }, [user?.username]);
+  useEffect(() => { load(); }, [load]);
 
-  const changeStatus = useCallback(async (product, status) => {
+  const changeStatus = async (product, status) => {
     try {
-      console.log('Updating product status:', { 
-        productId: product._id, 
-        currentStatus: product.status,
-        newStatus: status,
-        apiUrl: `${API_BASE}/api/v1/products/${product._id}/status`,
-        headers: headers()
-      });
-      
-      const response = await axios.patch(`${API_BASE}/api/v1/products/${product._id}/status`, { status }, headers());
-      console.log('Status update response:', response.data);
-      
-      // Show success message
-      toast.success(`Status successfully changed from "${product.status}" to "${status}"`);
-      
+      await axios.patch(`${API_BASE}/api/v1/products/${product._id}/status`, { status }, { headers: { Authorization: `Bearer ${getToken()}` } });
+      toast.success(`Status updated to "${status}"`);
+      if (detailProduct?._id === product._id) setDetailProduct(prev => ({ ...prev, status }));
       await load();
     } catch (err) {
-      console.error('Status update failed:', err);
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
-      
-      if (err.response?.status === 400) {
-        toast.error(`Invalid status "${status}". Backend only allows: Picked, Out for Delivery, Delivered, Problem, Failed/Returned`);
-      } else if (err.response?.status === 403) {
-        toast.error('You are not authorized to change this product status.');
-      } else {
-        toast.error(`Status update failed: ${err.response?.data?.message || err.message}`);
-      }
+      if (err.response?.status === 403) toast.error('Not authorized to change this status.');
+      else toast.error(err.response?.data?.message || 'Status update failed');
     }
-  }, [headers, load]);
-
-  // Derive unique clients from products
-  const clients = useMemo(() => {
-    const clientMap = {};
-    products.forEach(p => {
-      if (p.client) clientMap[p.client._id] = p.client;
-    });
-    return Object.values(clientMap);
-  }, [products]);
-
-  // Filter products based on search, status, and client
-  const filteredProducts = useMemo(() => {
-    const searchTerm = search.trim().toLowerCase();
-    return products.filter(p => {
-      // Status filter
-      if (statusFilter !== 'all' && p.status !== statusFilter) return false;
-      
-      // Client filter
-      if (clientFilter !== 'all' && String(p.client?._id) !== String(clientFilter)) return false;
-      
-      // Search filter
-      if (!searchTerm) return true;
-      const productName = (p.name || '').toLowerCase();
-      const clientName = (p.client?.name || p.client?.email || '').toLowerCase();
-      return productName.includes(searchTerm) || clientName.includes(searchTerm);
-    });
-  }, [products, search, statusFilter, clientFilter]);
-
-  const getActionButtons = (product) => {
-    const buttons = [];
-
-    // QR Code button - always available
-    buttons.push(
-      <Button
-        key="qr"
-        className="enhanced-action-btn btn-outline-info"
-        size="sm"
-        onClick={() => generateQRCode(product)}
-      >
-        <BsQrCode />
-        QR Code
-      </Button>
-    );
-
-    // Status update buttons - only if not delivered
-    if (product.status !== 'Delivered') {
-      if (product.status === 'In Stock' || product.status === 'Pending') {
-        buttons.push(
-          <Button
-            key="pickup"
-            className="enhanced-action-btn btn-outline-success"
-            size="sm"
-            onClick={() => changeStatus(product, 'Picked')}
-          >
-            <BsArrowUp />
-            Pick Up
-          </Button>
-        );
-      }
-
-      if (product.status === 'Picked') {
-        buttons.push(
-          <Button
-            key="deliver"
-            className="enhanced-action-btn btn-outline-info"
-            size="sm"
-            onClick={() => changeStatus(product, 'Out for Delivery')}
-          >
-            <BsTruck />
-            Out for Delivery
-          </Button>
-        );
-      }
-
-      if (product.status === 'Out for Delivery') {
-        buttons.push(
-          <Button
-            key="delivered"
-            className="enhanced-action-btn btn-outline-success"
-            size="sm"
-            onClick={() => changeStatus(product, 'Delivered')}
-          >
-            <BsCheckCircle />
-            Mark Delivered
-          </Button>
-        );
-      }
-
-      // Problem button - always available for non-delivered items
-      buttons.push(
-        <Button
-          key="problem"
-          className="enhanced-action-btn btn-outline-warning"
-          size="sm"
-          onClick={() => changeStatus(product, 'Problem')}
-        >
-          <BsExclamationTriangle />
-          Report Problem
-        </Button>
-      );
-    }
-
-    return buttons;
   };
 
-  useEffect(() => {
-    if (user?.id) {
-      load();
+  const filtered = useMemo(() => products.filter(p => {
+    if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return p.name?.toLowerCase().includes(q) || p.buyerName?.toLowerCase().includes(q) || p.buyerAddress?.toLowerCase().includes(q);
     }
-  }, [user?.id, load]);
+    return true;
+  }), [products, search, statusFilter]);
+
+  const selectClass = 'px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors';
 
   return (
-    <Container fluid className="assigned-deliveries-container">
-      {/* Enhanced Header Section */}
-      <div className="assigned-deliveries-header">
-        <div className="d-flex align-items-center justify-content-between">
+    <PageWrapper>
+      {/* Header banner */}
+      <div className="relative mb-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 p-6 overflow-hidden shadow-lg">
+        <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/10" />
+        <div className="relative z-10 flex items-center justify-between">
           <div>
-            <h1 className="assigned-deliveries-title">
-              <BsBoxSeam className="me-3" />
-              Assigned Deliveries
-            </h1>
-            <p className="assigned-deliveries-subtitle">
-              Manage your delivery assignments and track progress
-            </p>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2"><BsTruck size={22} />My Deliveries</h1>
+            <p className="text-emerald-100 mt-1 text-sm">{products.length} products assigned to you</p>
           </div>
-          <div className="text-white text-end">
-            <div className="h5 mb-1">{filteredProducts.length} deliveries</div>
-            <div className="small opacity-75">
-              {products.filter(p => p.status === 'Delivered').length} completed
+          <div className="hidden sm:flex items-center gap-3">
+            <div className="text-center">
+              <p className="text-2xl font-extrabold text-white">{products.filter(p => p.status === 'Delivered').length}</p>
+              <p className="text-xs text-emerald-200">Delivered</p>
+            </div>
+            <div className="w-px h-10 bg-white/20" />
+            <div className="text-center">
+              <p className="text-2xl font-extrabold text-white">{products.filter(p => p.status === 'Out for Delivery').length}</p>
+              <p className="text-xs text-emerald-200">Active</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Filter Section */}
-      <div className="filter-section">
-        <Row className="g-3">
-          <Col md={4}>
-            <h6>
-              <BsFilter className="me-2" />
-              Status Filter
-            </h6>
-            <Form.Select 
-              className="filter-select"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">All Statuses</option>
-              {ALL_PRODUCT_STATUSES.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col md={4}>
-            <h6>
-              <BsPerson className="me-2" />
-              Client Filter
-            </h6>
-            <Form.Select 
-              className="filter-select"
-              value={clientFilter}
-              onChange={(e) => setClientFilter(e.target.value)}
-            >
-              <option value="all">All Clients</option>
-              {clients.map(client => (
-                <option key={client._id} value={client._id}>
-                  {client.name || client.email}
-                </option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col md={4}>
-            <h6>
-              <BsSearch className="me-2" />
-              Search
-            </h6>
-            <InputGroup>
-              <Form.Control
-                className="filter-select"
-                placeholder="Search products or clients..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </InputGroup>
-          </Col>
-        </Row>
+      {/* Filters */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 mb-5">
+        <div className="flex flex-wrap gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <BsSearch size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="text" placeholder="Search by product or buyer..." value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full ps-9 pe-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors placeholder-slate-400" />
+          </div>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectClass}>
+            <option value="all">All Statuses</option>
+            {PRODUCT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {(search || statusFilter !== 'all') && (
+            <button onClick={() => { setSearch(''); setStatusFilter('all'); }}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              <BsX size={15} />Clear
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Deliveries Table */}
-      <div className="deliveries-table-card">
-        <div className="deliveries-table-header">
-          <h5>
-            <BsTruck className="me-2" />
-            Your Deliveries ({filteredProducts.length})
-          </h5>
+      {/* Products */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h5 className="font-semibold text-slate-900 dark:text-white text-sm">Assigned Products</h5>
+          <span className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-full">{filtered.length}</span>
         </div>
 
         {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p className="loading-text">Loading your assigned deliveries...</p>
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-slate-200 dark:border-slate-600 border-t-emerald-500" />
           </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="empty-state">
-            <BsBoxSeam size={48} className="empty-state-icon" />
-            <h5 className="empty-state-title">
-              No deliveries found
-            </h5>
-            <p className="empty-state-subtitle">
-              {search || statusFilter !== 'all' || clientFilter !== 'all'
-                ? 'Try adjusting your filters to see more deliveries'
-                : 'Your assigned deliveries will appear here when available'
-              }
-            </p>
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center">
+            <BsBoxSeam size={40} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+            <p className="text-sm text-slate-400">No deliveries found</p>
           </div>
         ) : (
-          <Table className="enhanced-deliveries-table" hover>
-            <thead>
-              <tr>
-                <th>
-                  <BsBoxSeam className="me-2" />
-                  Product Details
-                </th>
-                <th>Price</th>
-                <th>
-                  <BsPerson className="me-2" />
-                  Client
-                </th>
-                <th>
-                  <BsCheckCircle className="me-2" />
-                  Status
-                </th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map(product => (
-                <tr key={product._id} data-product-id={product._id}>
-                  <td>
-                    <div className="product-info">
-                      <h6>{product.name}</h6>
-                      <div className="text-muted">
-                        ID: {product._id.slice(-6).toUpperCase()}
-                      </div>
-                      <div className="text-muted small">
-                        <BsCalendar className="me-1" />
-                        {new Date(product.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="fw-medium">${product.price}</div>
-                  </td>
-                  <td>
-                    <div className="d-flex align-items-center">
-                      <div className="rounded-circle bg-light p-2 me-2">
-                        <BsPerson className="text-muted" />
-                      </div>
-                      <div>
-                        <div className="fw-medium">
-                          {product.client?.name || product.client?.email || 'N/A'}
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                    <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">Product</th>
+                    <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">Buyer</th>
+                    <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">Address</th>
+                    <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">Status</th>
+                    <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                  {filtered.map(p => (
+                    <tr key={p._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{p.name}</td>
+                      <td className="px-4 py-3">
+                        <p className="text-slate-700 dark:text-slate-300">{p.buyerName || '—'}</p>
+                        <p className="text-xs text-slate-400">{p.buyerPhone}</p>
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 dark:text-slate-400 max-w-[180px] truncate">
+                        <span className="flex items-center gap-1"><BsGeoAlt size={11} className="flex-shrink-0" />{p.buyerAddress || '—'}</span>
+                      </td>
+                      <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => setDetailProduct(p)}
+                            className="px-2.5 py-1 text-xs font-medium rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition-colors">
+                            Update
+                          </button>
+                          <button onClick={() => setQrProduct(p)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors">
+                            <BsQrCode size={14} />
+                          </button>
                         </div>
-                        <div className="text-muted small">
-                          {product.client?.email || 'No email'}
-                        </div>
-                      </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+              {filtered.map(p => (
+                <div key={p._id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white">{p.name}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{p.buyerName} · {p.buyerPhone}</p>
                     </div>
-                  </td>
-                  <td>
-                    <StatusBadge 
-                      status={product.status} 
-                      product={product}
-                      onStatusChange={changeStatus}
-                      isDeliveryPerson={true}
-                    />
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      {getActionButtons(product)}
-                    </div>
-                  </td>
-                </tr>
+                    <StatusBadge status={p.status} />
+                  </div>
+                  <p className="text-xs text-slate-400 flex items-center gap-1"><BsGeoAlt size={10} />{p.buyerAddress}</p>
+                  <div className="flex gap-2">
+                    {PRODUCT_STATUSES.filter(s => s !== p.status).slice(0, 2).map(s => (
+                      <button key={s} onClick={() => changeStatus(p, s)}
+                        className="flex-1 py-1.5 text-xs font-medium rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition-colors truncate px-2">
+                        {s}
+                      </button>
+                    ))}
+                    <button onClick={() => setQrProduct(p)}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+                      QR
+                    </button>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </Table>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Enhanced QR Code Modal */}
-      <Modal 
-        show={qrModalOpen} 
-        onHide={() => setQrModalOpen(false)} 
-        centered
-        className="enhanced-qr-modal"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <BsQrCode className="me-2" />
-            Delivery QR Code
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {qrCode && (
-            <div className="qr-code-container">
-              <QRCode 
-                value={qrCode} 
-                size={200} 
-                bgColor="#ffffff"
-                fgColor="#2d3748"
-              />
-            </div>
-          )}
-          {selectedProduct && (
-            <div className="qr-product-info">
-              <h6>
-                <BsBoxSeam className="me-2" />
-                {selectedProduct.name}
-              </h6>
-              <div className="row g-2 text-start">
-                <div className="col-6">
-                  <strong>Status:</strong><br />
-                  <StatusBadge 
-                    status={selectedProduct.status} 
-                    product={selectedProduct}
-                    onStatusChange={changeStatus}
-                    isDeliveryPerson={true}
-                  />
-                </div>
-                <div className="col-6">
-                  <strong>Price:</strong><br />
-                  <span>${selectedProduct.price}</span>
-                </div>
-                <div className="col-12">
-                  <strong>Client:</strong><br />
-                  <span>{selectedProduct.client?.name || selectedProduct.client?.email || 'Unknown'}</span>
-                </div>
-                <div className="col-12">
-                  <strong>Product ID:</strong><br />
-                  <code>{selectedProduct._id}</code>
-                </div>
-                <div className="col-12">
-                  <hr className="my-2" />
-                  <strong>
-                    <BsPerson className="me-2" />
-                    Buyer Information:
-                  </strong>
-                </div>
-                <div className="col-12">
-                  <strong>Name:</strong><br />
-                  <span>{selectedProduct.buyerName || 'N/A'}</span>
-                </div>
-                <div className="col-6">
-                  <strong>Phone:</strong><br />
-                  <span>{selectedProduct.buyerPhone || 'N/A'}</span>
-                </div>
-                <div className="col-6">
-                  <strong>Address:</strong><br />
-                  <span>{selectedProduct.buyerAddress || 'N/A'}</span>
-                </div>
+      {/* QR Modal */}
+      <Modal show={!!qrProduct} onClose={() => setQrProduct(null)} title={`QR — ${qrProduct?.name}`}>
+        <div className="p-6 flex flex-col items-center gap-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200">
+            <QRCode
+              value={qrProduct ? JSON.stringify({ id: qrProduct._id, name: qrProduct.name, status: qrProduct.status, buyer: { name: qrProduct.buyerName, phone: qrProduct.buyerPhone, address: qrProduct.buyerAddress } }) : ''}
+              size={160}
+            />
+          </div>
+          <div className="text-center">
+            <p className="font-semibold text-slate-900 dark:text-white">{qrProduct?.name}</p>
+            <p className="text-sm text-slate-500 mt-0.5">{qrProduct?.buyerName}</p>
+            <p className="text-xs text-slate-400 mt-0.5 flex items-center justify-center gap-1"><BsGeoAlt size={10} />{qrProduct?.buyerAddress}</p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Detail / Status Update Modal */}
+      <Modal show={!!detailProduct} onClose={() => setDetailProduct(null)} title={detailProduct?.name}>
+        {detailProduct && (
+          <div className="p-6 space-y-4">
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Current Status</span>
+                <StatusBadge status={detailProduct.status} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Buyer</span>
+                <span className="font-medium text-slate-900 dark:text-white">{detailProduct.buyerName || '—'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Phone</span>
+                <span className="font-medium text-slate-900 dark:text-white">{detailProduct.buyerPhone || '—'}</span>
+              </div>
+              <div className="flex items-start justify-between gap-4">
+                <span className="text-slate-500 flex-shrink-0">Address</span>
+                <span className="font-medium text-slate-900 dark:text-white text-right">{detailProduct.buyerAddress || '—'}</span>
               </div>
             </div>
-          )}
-          <p className="text-muted mt-3 mb-0">
-            Present this QR code to verify delivery completion
-          </p>
-        </Modal.Body>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Update Status</p>
+            <div className="grid grid-cols-1 gap-2">
+              {PRODUCT_STATUSES.map(s => (
+                <button key={s} onClick={() => changeStatus(detailProduct, s)} disabled={detailProduct.status === s}
+                  className={`w-full py-2.5 px-4 text-sm font-medium rounded-xl border transition-colors ${detailProduct.status === s ? 'bg-emerald-600 text-white border-emerald-600 cursor-default' : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                  {s} {detailProduct.status === s && '✓'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </Modal>
-    </Container>
+    </PageWrapper>
   );
 }

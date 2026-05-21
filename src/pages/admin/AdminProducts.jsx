@@ -1,575 +1,300 @@
-import React, { useEffect, useState } from 'react';
-import { Container, Table, Button, Modal, Row, Col, ListGroup, Form, Card, Badge, Dropdown } from 'react-bootstrap';
-import { useTranslation } from 'react-i18next';
-import { BsPerson, BsBoxSeam, BsTruck, BsQrCode, BsPersonPlus, BsCheck2Circle, BsCheckCircle, BsExclamationTriangle, BsX, BsPrinter } from 'react-icons/bs';
-import axios from 'axios';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import QRCode from 'react-qr-code';
-import logo from '../../assets/images/KMDelivery.png';
-import './AdminProducts.css';
+import { BsBoxSeam, BsSearch, BsTruck, BsQrCode, BsX, BsPerson, BsChevronRight } from 'react-icons/bs';
+import StatusBadge from '../../components/common/StatusBadge';
+import PageWrapper from '../../components/common/PageWrapper';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-export default function AdminProducts(){
+const STATUS_OPTIONS = ['In Stock', 'Picked', 'Out for Delivery', 'Delivered', 'Problem', 'Failed/Returned'];
+
+const inputClass = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors placeholder-slate-400';
+
+function Modal({ show, onClose, title, children, maxW = 'max-w-md' }) {
+  useEffect(() => {
+    document.body.style.overflow = show ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [show]);
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className={`bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full ${maxW} animate-slide-up`}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+          <h5 className="font-semibold text-slate-900 dark:text-white text-sm">{title}</h5>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-colors">
+            <BsX size={18} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function StatusDropdown({ product, onUpdate }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(o => !o)} className="flex items-center gap-1.5">
+        <StatusBadge status={product.status} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full mt-1 z-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 min-w-[180px]">
+            {STATUS_OPTIONS.map(s => (
+              <button key={s} onClick={() => { onUpdate(product._id, s); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${product.status === s ? 'opacity-50 cursor-default' : ''}`}
+                disabled={product.status === s}>
+                <StatusBadge status={s} />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default function AdminProducts() {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const [clients, setClients] = useState([]);
-  const [selectedClient, setSelectedClient] = useState(null);
   const [products, setProducts] = useState([]);
+  const [clients, setClients] = useState([]);
   const [deliveryPersons, setDeliveryPersons] = useState([]);
-
-  const [showQR, setShowQR] = useState(false);
-  const [selected, setSelected] = useState(null);
-
-  const [showAssign, setShowAssign] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [qrProduct, setQrProduct] = useState(null);
   const [assignProduct, setAssignProduct] = useState(null);
-  const [assignTo, setAssignTo] = useState('');
+  const [assignPersonId, setAssignPersonId] = useState('');
 
-  const headers = () => ({ headers: { Authorization: `Bearer ${user?.token}` } });
+  const getToken = () => localStorage.getItem('rf_access_token') || user?.token;
+  const headers = () => ({ headers: { Authorization: `Bearer ${getToken()}` } });
 
-  const loadClients = async ()=>{
-    try{
-      const resp = await axios.get(`${API_BASE}/api/v1/users/clients`, headers());
-      setClients(resp.data.clients || []);
-      if (resp.data.clients && resp.data.clients.length) setSelectedClient(resp.data.clients[0]);
-    }catch(err){ console.error('loadClients', err); }
-  };
-
-  const loadDeliveryPersons = async ()=>{
-    try{
-      const resp = await axios.get(`${API_BASE}/api/v1/users/delivery-persons`, headers());
-      setDeliveryPersons(resp.data.delivery || []);
-    }catch(err){ console.error('loadDelivery', err); }
-  };
-
-  const loadProducts = async (clientId)=>{
-    try{
-      const url = clientId ? `${API_BASE}/api/v1/products?client=${clientId}` : `${API_BASE}/api/v1/products`;
-      const resp = await axios.get(url, headers());
-      setProducts(resp.data.products || []);
-    }catch(err){ console.error('loadProducts', err); }
-  };
-
-  useEffect(()=>{ loadClients(); loadDeliveryPersons(); }, []);
-
-  useEffect(()=>{ if (selectedClient) loadProducts(selectedClient._id); }, [selectedClient]);
-
-  const openQR = (p)=>{ setSelected(p); setShowQR(true); };
-
-  const openAssign = (p)=>{ setAssignProduct(p); setAssignTo(p.assignedTo?._id || ''); setShowAssign(true); };
-
-  const doAssign = async ()=>{
-    if (!assignTo) return toast.warning('Please select a delivery person');
-    try{
-      // Assign the product to delivery person
-      await axios.post(`${API_BASE}/api/v1/products/${assignProduct._id}/assign`, { deliveryPersonId: assignTo }, headers());
-      
-      // Automatically update status to "Picked" when assigned
-      await axios.patch(`${API_BASE}/api/v1/products/${assignProduct._id}/status`, { status: 'Picked' }, headers());
-      
-      setShowAssign(false);
-      setAssignTo('');
-      setAssignProduct(null);
-      
-      // refresh
-      loadProducts(selectedClient?._id);
-      loadDeliveryPersons();
-      
-      // Show success message
-      toast.success('Product assigned successfully and status updated to "Picked"');
-    }catch(err){ 
-      console.error('assign', err); 
-      toast.error('Assignment failed. Please try again.'); 
-    }
-  };
-
-  // Status options for dropdown
-  const statusOptions = [
-    { value: 'In Stock', label: 'In Stock', variant: 'secondary' },
-    { value: 'Picked', label: 'Picked', variant: 'info' },
-    { value: 'Out for Delivery', label: 'Out for Delivery', variant: 'primary' },
-    { value: 'Delivered', label: 'Delivered', variant: 'success' },
-    { value: 'Problem', label: 'Problem', variant: 'warning' },
-    { value: 'Failed/Returned', label: 'Failed/Returned', variant: 'danger' }
-  ];
-
-  // Get status badge variant
-  const getStatusVariant = (status) => {
-    const statusOption = statusOptions.find(opt => opt.value === status);
-    return statusOption?.variant || 'secondary';
-  };
-
-  // Handle status update
-  const handleUpdateStatus = async (productId, newStatus) => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      await axios.patch(`${API_BASE}/api/v1/products/${productId}/status`, { status: newStatus }, headers());
-      // Refresh products after status update
-      loadProducts(selectedClient?._id);
-      toast.success(`Status updated to "${newStatus}" successfully!`);
-    } catch (error) {
-      console.error('Failed to update product status:', error);
-      toast.error('Failed to update status. Please try again.');
-    }
+      const [prodRes, clientRes, delivRes] = await Promise.all([
+        axios.get(`${API_BASE}/api/v1/products`, headers()),
+        axios.get(`${API_BASE}/api/v1/users?role=client`, headers()),
+        axios.get(`${API_BASE}/api/v1/users?role=delivery`, headers()),
+      ]);
+      setProducts(prodRes.data.products || []);
+      setClients(clientRes.data.users || []);
+      setDeliveryPersons(delivRes.data.users || []);
+    } catch { toast.error(t('errors.loadProductsFailed')); }
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => { if (user) load(); }, [user]);
+
+  const updateStatus = async (id, status) => {
+    try {
+      await axios.patch(`${API_BASE}/api/v1/products/${id}/status`, { status }, headers());
+      toast.success(t('messages.statusUpdated'));
+      load();
+    } catch { toast.error(t('errors.updateStatusFailed')); }
   };
 
-  const printInvoice = (product) => {
-    // Create a new window for the invoice
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    
-    const currentDate = new Date().toLocaleDateString();
-    
-    // Try to generate QR code SVG using online service
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(product.qrData)}`;
-    
-    const invoiceHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Invoice - ${product.name}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 0;
-              padding: 20px;
-              background: white;
-            }
-            .invoice-container {
-              max-width: 800px;
-              margin: 0 auto;
-              background: white;
-              border: 2px solid #333;
-              padding: 30px;
-            }
-            .invoice-header {
-              text-align: center;
-              border-bottom: 2px solid #333;
-              padding-bottom: 20px;
-              margin-bottom: 30px;
-            }
-            .company-info {
-              text-align: center;
-              margin-bottom: 20px;
-            }
-            .company-name {
-              font-size: 24px;
-              font-weight: bold;
-              color: #333;
-              margin-bottom: 5px;
-            }
-            .invoice-title {
-              font-size: 32px;
-              font-weight: bold;
-              color: #007bff;
-              margin: 10px 0;
-            }
-            .invoice-details {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 30px;
-            }
-            .invoice-info, .product-info {
-              flex: 1;
-            }
-            .qr-section {
-              text-align: center;
-              margin: 20px 0;
-              padding: 20px;
-              border: 2px dashed #007bff;
-              background: #f8f9fa;
-            }
-            .product-details {
-              background: #f8f9fa;
-              padding: 20px;
-              border-radius: 8px;
-              margin: 20px 0;
-            }
-            .detail-row {
-              display: flex;
-              justify-content: space-between;
-              padding: 8px 0;
-              border-bottom: 1px solid #ddd;
-            }
-            .detail-row:last-child {
-              border-bottom: none;
-              font-weight: bold;
-              font-size: 18px;
-              color: #007bff;
-            }
-            .footer {
-              text-align: center;
-              margin-top: 40px;
-              padding-top: 20px;
-              border-top: 2px solid #333;
-            }
-
-            @media print {
-              body { margin: 0; }
-              .invoice-container { border: none; box-shadow: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="invoice-container">
-            <div class="invoice-header">
-              <div class="company-info">
-                <img src="${window.location.origin}/logo.png" alt="KM Delivery Logo" style="height: 60px; width: auto; margin-bottom: 10px;" />
-                <div>Professional Delivery Solutions</div>
-              </div>
-              <div class="invoice-title">DELIVERY INVOICE</div>
-              <div>Date: ${currentDate}</div>
-            </div>
-            
-            <div class="invoice-details">
-              <div class="invoice-info">
-                <h4>Product Information:</h4>
-                <p><strong>Product:</strong> ${product.name}</p>
-                <p><strong>Assigned To:</strong> ${product.assignedTo?.name || 'Unassigned'}</p>
-              </div>
-              <div class="product-info">
-                <h4>Customer Details:</h4>
-                <p><strong>Customer:</strong> ${product.buyerName || 'N/A'}</p>
-                <p><strong>Phone:</strong> ${product.buyerPhone || 'N/A'}</p>
-                <p><strong>Address:</strong> ${product.buyerAddress || 'N/A'}</p>
-              </div>
-            </div>
-            
-            <div class="qr-section">
-              <h4>Product QR Code</h4>
-              <div style="display: inline-block; padding: 10px; background: white; border: 2px solid #333;">
-                <img src="${qrApiUrl}" alt="QR Code for ${product.name}" style="width: 120px; height: 120px; display: block;" 
-                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                <div style="width: 120px; height: 120px; border: 1px dashed #ccc; display: none; align-items: center; justify-content: center; font-size: 12px; color: #666; text-align: center;">
-                  QR Code<br/>for<br/>${product.name}
-                </div>
-              </div>
-              <p style="margin-top: 10px; font-size: 12px; color: #666;">
-                Scan this QR code for product tracking and verification
-              </p>
-            </div>
-            
-            <div class="product-details">
-              <h4>Financial Details</h4>
-              <div class="detail-row">
-                <span>Product Price:</span>
-                <span>${product.price} TND</span>
-              </div>
-              <div class="detail-row">
-                <span>Delivery Fee:</span>
-                <span>0 TND</span>
-              </div>
-              <div class="detail-row">
-                <span>Total Amount:</span>
-                <span>${product.price} TND</span>
-              </div>
-            </div>
-            
-            <div class="footer">
-              <p><strong>Thank you for choosing our delivery service!</strong></p>
-              <p style="font-size: 12px; color: #666;">
-                This invoice serves as confirmation of delivery service for the above product.
-                Keep this document for your records.
-              </p>
-            </div>
-          </div>
-          
-          <script>
-            // Auto print when page loads
-            window.onload = function() {
-              window.print();
-            }
-          </script>
-        </body>
-      </html>
-    `;
-    
-    printWindow.document.write(invoiceHTML);
-    printWindow.document.close();
+  const assignDelivery = async () => {
+    if (!assignPersonId) { toast.error(t('admin.selectDeliveryPerson')); return; }
+    try {
+      await axios.post(`${API_BASE}/api/v1/products/${assignProduct._id}/assign`, { deliveryPersonId: assignPersonId }, headers());
+      toast.success(t('products.assigned'));
+      setAssignProduct(null);
+      setAssignPersonId('');
+      load();
+    } catch { toast.error(t('errors.assignFailed')); }
   };
+
+  const printInvoice = (p) => {
+    const html = `<!DOCTYPE html><html><head><title>Invoice - ${p.name}</title>
+    <style>body{font-family:sans-serif;padding:32px;max-width:600px;margin:0 auto}h2{color:#4f46e5}table{width:100%;border-collapse:collapse}td{padding:8px 12px;border-bottom:1px solid #e2e8f0}td:first-child{font-weight:600;color:#64748b;width:40%}</style>
+    </head><body><h2>RouteFlow — Invoice</h2>
+    <table><tr><td>Product</td><td>${p.name}</td></tr>
+    <tr><td>Price</td><td>${p.price} TND</td></tr>
+    <tr><td>Status</td><td>${p.status}</td></tr>
+    <tr><td>Buyer</td><td>${p.buyerName || 'N/A'}</td></tr>
+    <tr><td>Phone</td><td>${p.buyerPhone || 'N/A'}</td></tr>
+    <tr><td>Address</td><td>${p.buyerAddress || 'N/A'}</td></tr>
+    <tr><td>Assigned To</td><td>${p.assignedTo?.name || 'Unassigned'}</td></tr>
+    </table><p style="margin-top:32px;color:#94a3b8;font-size:12px">Generated by RouteFlow on ${new Date().toLocaleDateString()}</p>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+    w.print();
+  };
+
+  const filtered = products.filter(p => {
+    if (selectedClient && p.client?._id !== selectedClient) return false;
+    if (query && !p.name?.toLowerCase().includes(query.toLowerCase()) && !p.buyerName?.toLowerCase().includes(query.toLowerCase())) return false;
+    return true;
+  });
+
+  const clientProductCount = (cid) => products.filter(p => p.client?._id === cid).length;
 
   return (
-    <>
-      <Container fluid className="admin-products-container">
-        {/* Header Section */}
-        <div className="header-section mb-4">
-          <h3 className="page-title">{t('admin.clientsAndProducts')}</h3>
-          <p className="page-subtitle text-muted">Manage product assignments and track delivery progress</p>
+    <PageWrapper>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <BsBoxSeam size={22} className="text-indigo-500" />
+          {t('navigation.products')}
+        </h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">{t('admin.manageProducts')}</p>
+      </div>
+
+      <div className="flex gap-4 flex-col lg:flex-row">
+        {/* Client sidebar */}
+        <div className="lg:w-56 flex-shrink-0">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{t('admin.clients')}</p>
+            </div>
+            <div className="py-1">
+              <button
+                onClick={() => setSelectedClient(null)}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${!selectedClient ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+              >
+                <span className="flex items-center gap-2"><BsPerson size={14} />{t('admin.allClients')}</span>
+                <span className="text-xs font-bold">{products.length}</span>
+              </button>
+              {clients.map(c => (
+                <button
+                  key={c._id}
+                  onClick={() => setSelectedClient(c._id)}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${selectedClient === c._id ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                >
+                  <span className="truncate">{c.name}</span>
+                  <span className="text-xs font-bold ml-2 flex-shrink-0">{clientProductCount(c._id)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <Row className="g-4">
-          {/* Clients Sidebar */}
-          <Col lg={3} md={4}>
-            <Card className="clients-card shadow-lg border-0">
-              <Card.Header className="clients-header">
-                <div className="d-flex align-items-center">
-                  <BsPerson className="me-2" size={20} />
-                  <span className="fw-bold">Clients ({clients.length})</span>
-                </div>
-              </Card.Header>
-              <Card.Body className="p-0">
-                <div className="clients-list">
-                  {clients.map(c=> (
-                    <div 
-                      key={c._id} 
-                      className={`client-item ${selectedClient?._id===c._id ? 'active' : ''}`}
-                      onClick={()=>setSelectedClient(c)}
-                    >
-                      <div className="client-avatar">
-                        <BsPerson size={24} />
-                      </div>
-                      <div className="client-info">
-                        <div className="client-name">{c.name}</div>
-                        <div className="client-email">{c.email}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
+        {/* Products panel */}
+        <div className="flex-1 min-w-0">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            {/* Toolbar */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+              <div className="relative flex-1">
+                <BsSearch size={13} className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input type="text" placeholder={t('admin.searchProducts')} value={query} onChange={e => setQuery(e.target.value)}
+                  className="w-full ps-9 pe-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors placeholder-slate-400" />
+              </div>
+              <span className="text-xs text-slate-500 whitespace-nowrap">{filtered.length} {t('common.products')}</span>
+            </div>
 
-          {/* Products Section */}
-          <Col lg={9} md={8}>
-            <Card className="products-card shadow-lg border-0">
-              <Card.Header className="products-header">
-                <div className="d-flex justify-content-between align-items-center">
-                  <div className="d-flex align-items-center">
-                    <BsBoxSeam className="me-2" size={20} />
-                    <span className="fw-bold">
-                      {selectedClient ? `${t('admin.productsForClient')} ${selectedClient.name}` : 'Select a client to view products'}
-                    </span>
-                  </div>
-                  <Badge bg="primary" className="product-count-badge">
-                    {products.length} products
-                  </Badge>
-                </div>
-              </Card.Header>
-              <Card.Body className="p-0">
-                {selectedClient ? (
-                  <div className="products-table-wrapper">
-                    <Table className="products-table mb-0">
-                      <thead>
-                        <tr>
-                          <th>{t('common.name')}</th>
-                          <th>{t('common.price')}</th>
-                          <th>{t('admin.assignedTo')}</th>
-                          <th>{t('common.status')}</th>
-                          <th>{t('common.actions')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {products.map(p=> (
-                          <tr key={p._id} className="product-row">
-                            <td>
-                              <div className="product-info">
-                                <BsBoxSeam className="me-2 text-primary" size={16} />
-                                <span className="product-name">{p.name}</span>
-                              </div>
-                            </td>
-                            <td>
-                              <span className="price-display">{p.price} {t('common.currency')}</span>
-                            </td>
-                            <td>
-                              {p.assignedTo ? (
-                                <div className="assignee-info">
-                                  <BsTruck className="me-2 text-success" size={14} />
-                                  <span>{p.assignedTo.name}</span>
-                                </div>
-                              ) : (
-                                <Badge bg="secondary" className="unassigned-badge">
-                                  {t('products.unassigned')}
-                                </Badge>
-                              )}
-                            </td>
-                            <td>
-                              <Dropdown align="start">
-                                <Dropdown.Toggle 
-                                  as={Badge}
-                                  bg={getStatusVariant(p.status)}
-                                  className="status-badge-clickable"
-                                  style={{ cursor: 'pointer', border: 'none' }}
-                                >
-                                  {p.status}
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu className="status-dropdown-menu">
-                                  {statusOptions.map(option => (
-                                    <Dropdown.Item
-                                      key={option.value}
-                                      onClick={() => handleUpdateStatus(p._id, option.value)}
-                                      active={p.status === option.value}
-                                      className="status-dropdown-item"
-                                    >
-                                      <Badge bg={option.variant} className="me-2">
-                                        {option.label}
-                                      </Badge>
-                                    </Dropdown.Item>
-                                  ))}
-                                </Dropdown.Menu>
-                              </Dropdown>
-                            </td>
-                            <td>
-                              <div className="action-buttons">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline-info" 
-                                  className="qr-button me-2" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openQR(p);
-                                  }}
-                                >
-                                  <BsQrCode className="me-1" />
-                                  {t('admin.qr')}
-                                </Button>
-                                {p.assignedTo ? (
-                                  <Button 
-                                    size="sm" 
-                                    variant="success"
-                                    className="assigned-button"
-                                    disabled
-                                  >
-                                    <BsCheckCircle className="me-1" />
-                                    {t('admin.assigned')}
-                                  </Button>
-                                ) : (
-                                  <Button 
-                                    size="sm" 
-                                    variant="primary"
-                                    className="assign-button"
-                                    onClick={() => openAssign(p)}
-                                  >
-                                    <BsPersonPlus className="me-1" />
-                                    {t('admin.assign')}
-                                  </Button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="no-client-selected">
-                    <BsPerson size={48} className="text-muted mb-3" />
-                    <h5 className="text-muted">{t('admin.selectClient')}</h5>
-                    <p className="text-muted mb-0">{t('admin.selectClientSubtitle')}</p>
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin rounded-full h-8 w-8 border-4 border-slate-200 dark:border-slate-600 border-t-indigo-500" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="py-16 text-center">
+                <BsBoxSeam size={40} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                <p className="text-sm text-slate-400">{t('admin.noProductsFound')}</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                      <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">{t('products.productName')}</th>
+                      <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">{t('common.client')}</th>
+                      <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">{t('common.price')}</th>
+                      <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">{t('common.status')}</th>
+                      <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">{t('products.assignedTo')}</th>
+                      <th className="px-4 py-3 text-start text-xs font-bold uppercase tracking-wide text-slate-500">{t('common.actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                    {filtered.map(p => (
+                      <tr key={p._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{p.name}</td>
+                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{p.client?.name || '—'}</td>
+                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-medium">{p.price} TND</td>
+                        <td className="px-4 py-3">
+                          <StatusDropdown product={p} onUpdate={updateStatus} />
+                        </td>
+                        <td className="px-4 py-3">
+                          {p.assignedTo ? (
+                            <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+                              <BsTruck size={12} />{p.assignedTo.name}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400">{t('products.notAssigned')}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <button onClick={() => { setAssignProduct(p); setAssignPersonId(p.assignedTo?._id || ''); }}
+                              className="px-2.5 py-1 text-xs font-medium rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition-colors flex items-center gap-1">
+                              <BsTruck size={11} />{t('products.assign')}
+                            </button>
+                            <button onClick={() => setQrProduct(p)}
+                              className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors flex items-center gap-1">
+                              <BsQrCode size={11} />QR
+                            </button>
+                            <button onClick={() => printInvoice(p)}
+                              className="px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+                              {t('common.print')}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* QR Modal */}
-      <Modal show={showQR} onHide={()=>setShowQR(false)} size="lg" centered>
-        <Modal.Header closeButton className="modal-header-enhanced">
-          <Modal.Title className="d-flex align-items-center">
-            <BsQrCode className="me-2" />
-            {t('admin.productQrDetails')}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="modal-body-enhanced">
-          {selected && (
-            <div>
-              <div className="d-flex gap-4 align-items-start mb-3">
-                <div className="qr-container">
-                  <QRCode value={selected.qrData} size={200} />
-                </div>
-                <div className="product-details">
-                <h5 className="product-title">{selected.name}</h5>
-                <div className="detail-item">
-                  <strong>Price:</strong> <span className="price-value">{selected.price} {t('common.currency')}</span>
-                </div>
-                <div className="detail-item">
-                  <strong>Buyer:</strong> {selected.buyerName || '-'}
-                </div>
-                <div className="detail-item">
-                  <strong>Address:</strong> {selected.buyerAddress}
-                </div>
-                <div className="detail-item">
-                  <strong>Phone:</strong> {selected.buyerPhone}
-                </div>
-                <div className="detail-item">
-                  <strong>Status:</strong> 
-                  <Badge bg={selected.status === 'Delivered' ? 'success' : 'primary'} className="ms-2">
-                    {selected.status}
-                  </Badge>
-                </div>
-                <div className="detail-item">
-                  <strong>Assigned To:</strong> {selected.assignedTo?.name || 'Unassigned'}
-                </div>
-              </div>
-              </div>
-              <div className="text-center mt-3">
-                <Button 
-                  onClick={() => printInvoice(selected)}
-                  className="print-invoice-btn"
-                  size="md"
-                >
-                  <BsPrinter className="me-2" />
-                  {t('admin.printInvoice') || 'Print Invoice'}
-                </Button>
-              </div>
-            </div>
-          )}
-        </Modal.Body>
+      <Modal show={!!qrProduct} onClose={() => setQrProduct(null)} title={`QR — ${qrProduct?.name}`}>
+        <div className="p-6 flex flex-col items-center gap-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200">
+            <QRCode value={qrProduct ? JSON.stringify({ id: qrProduct._id, name: qrProduct.name, status: qrProduct.status, buyer: qrProduct.buyerName, phone: qrProduct.buyerPhone }) : ''} size={180} />
+          </div>
+          <div className="text-center">
+            <p className="font-semibold text-slate-900 dark:text-white">{qrProduct?.name}</p>
+            <p className="text-sm text-slate-500 mt-0.5">{qrProduct?.buyerName} · {qrProduct?.buyerPhone}</p>
+          </div>
+        </div>
       </Modal>
 
       {/* Assign Modal */}
-      <Modal show={showAssign} onHide={()=>setShowAssign(false)} centered>
-        <Modal.Header closeButton className="modal-header-enhanced">
-          <Modal.Title className="d-flex align-items-center">
-            <BsPersonPlus className="me-2" />
-            {t('admin.assignDeliveryPerson')}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="modal-body-enhanced">
-          {assignProduct && (
-            <div>
-              <div className="assign-product-info mb-3">
-                <h6 className="mb-2">{t('admin.productDetails')}</h6>
-                <div className="product-summary">
-                  <BsBoxSeam className="me-2 text-primary" />
-                  <span className="fw-bold">{assignProduct.name}</span>
-                  <span className="text-muted ms-2">({assignProduct.price} {t('common.currency')})</span>
-                </div>
-              </div>
-              <Form.Group>
-                <Form.Label className="fw-bold">{t('admin.selectDeliveryPerson')}</Form.Label>
-                <Form.Select 
-                  value={assignTo} 
-                  onChange={(e)=>setAssignTo(e.target.value)}
-                  className="enhanced-select"
-                >
-                  <option value="">-- Select Delivery Person --</option>
-                  {deliveryPersons.map(d=> (
-                    <option key={d._id} value={d._id}>{d.name} ({d.email})</option>
-                  ))}
-                </Form.Select>
-                <div className="mt-3 p-2 bg-light rounded">
-                  <small className="text-muted">
-                    <BsCheck2Circle className="me-1 text-success" />
-                    <strong>Note:</strong> {t('admin.assignmentNote')}
-                  </small>
-                </div>
-              </Form.Group>
-            </div>
-          )}
-        </Modal.Body>
-        <Modal.Footer className="modal-footer-enhanced">
-          <Button variant="outline-secondary" onClick={()=>setShowAssign(false)} className="enhanced-cancel-btn">
-            {t('common.cancel')}
-          </Button>
-          <Button variant="primary" onClick={doAssign} className="enhanced-assign-btn">
-            <BsPersonPlus className="me-1" />
-            {t('admin.assign')}
-          </Button>
-        </Modal.Footer>
+      <Modal show={!!assignProduct} onClose={() => { setAssignProduct(null); setAssignPersonId(''); }} title={t('products.assignDeliveryPerson')}>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400">{t('products.assigningProduct')}: <span className="font-semibold text-slate-900 dark:text-white">{assignProduct?.name}</span></p>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{t('admin.deliveryPerson')}</label>
+            <select value={assignPersonId} onChange={e => setAssignPersonId(e.target.value)} className={inputClass}>
+              <option value="">{t('admin.selectDeliveryPerson')}</option>
+              {deliveryPersons.map(d => (
+                <option key={d._id} value={d._id}>{d.name} ({d.email})</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => { setAssignProduct(null); setAssignPersonId(''); }}
+              className="flex-1 py-2.5 px-4 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+              {t('common.cancel')}
+            </button>
+            <button onClick={assignDelivery}
+              className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors text-sm font-medium">
+              {t('products.assign')}
+            </button>
+          </div>
+        </div>
       </Modal>
-
-
-    </>
+    </PageWrapper>
   );
 }

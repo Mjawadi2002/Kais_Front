@@ -2,70 +2,43 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
-
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  const toggleSidebar = () => setSidebarOpen(v => !v);
+  const closeSidebar = () => setSidebarOpen(false);
 
-  const closeSidebar = () => {
-    setSidebarOpen(false);
-  };
-
-  // Close sidebar when clicking outside on mobile
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setSidebarOpen(false); // Close mobile sidebar when switching to desktop
-      }
+      if (window.innerWidth >= 768) setSidebarOpen(false);
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
-    if (sidebarOpen && window.innerWidth < 768) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    document.body.style.overflow = sidebarOpen && window.innerWidth < 768 ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
   }, [sidebarOpen]);
 
   return (
-    <div className="d-flex" style={{ minHeight: '100vh' }}>
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0 }}>
+
+      <div className="flex-1 flex flex-col min-w-0">
         <Topbar onToggleSidebar={toggleSidebar} />
-        <main className="flex-grow-1 p-3 p-md-4" style={{ background: '#f8f9fa' }}>
-          <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
+        <main className="flex-1 p-4 md:p-6 bg-slate-50 dark:bg-slate-900">
+          <div className="max-w-full overflow-x-auto">
             {children}
           </div>
         </main>
       </div>
-      
-      {/* Mobile overlay when sidebar is open */}
+
+      {/* Mobile overlay */}
       {sidebarOpen && (
-        <div 
-          className="sidebar-overlay d-md-none"
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden animate-fade-in"
           onClick={closeSidebar}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 1040,
-            backdropFilter: 'blur(2px)'
-          }}
         />
       )}
     </div>

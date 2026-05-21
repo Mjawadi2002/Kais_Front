@@ -21,7 +21,11 @@
     "price": "Price",
     "name": "Name",
     "currency": "TND",
-    "client": "Client"
+    "client": "Client",
+    "product": "Product",
+    "products": "Products",
+    "print": "Print",
+    "printInvoice": "Print Invoice"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -30,7 +34,8 @@
     "deliveries": "Manage Deliveries",
     "users": "Manage Users",
     "analytics": "Analytics Dashboard",
-    "manageProducts": "Manage Products"
+    "manageProducts": "Manage Products",
+    "assignedDeliveries": "Assigned Deliveries"
   },
   "dashboard": {
     "title": "Analytics Dashboard",
@@ -64,7 +69,8 @@
     "ofTotal": "of total",
     "items": "items",
     "trackDelivery": "Track Delivery",
-    "viewReports": "View Reports"
+    "viewReports": "View Reports",
+    "manageProductsDeliveries": "Manage your products and delivery assignments"
   },
   "products": {
     "productName": "Product Name",
@@ -83,7 +89,17 @@
     "creating": "Creating...",
     "productCreated": "Product created successfully",
     "createProductFailed": "Failed to create product",
-    "addProductSubtitle": "Fill in the product details to add it to your inventory"
+    "addProductSubtitle": "Fill in the product details to add it to your inventory",
+    "assign": "Assign",
+    "assigned": "Assigned successfully",
+    "assigningProduct": "Assigning",
+    "assignDeliveryPerson": "Assign Delivery Person",
+    "myProducts": "My Products",
+    "manageYourProducts": "Track and manage all your products",
+    "noProducts": "No products found",
+    "addProduct": "Add Product",
+    "productInformation": "Product Information",
+    "fillInDetails": "Fill in the details below to create a new product"
   },
   "deliveries": {
     "manageDeliveries": "Manage Deliveries",
@@ -126,6 +142,7 @@
     "loadDataFailed": "Failed to load dashboard data",
     "loadProductsFailed": "Failed to load products", 
     "updateStatusFailed": "Failed to update product status",
+    "assignFailed": "Failed to assign delivery person",
     "noProductsYet": "No products yet",
     "startByAdding": "Start by adding your first product to see analytics."
   },
@@ -182,6 +199,11 @@
     "assignmentNote": "When you assign this product, its status will automatically be updated to \"Picked\" and ready for delivery.",
     "deleteClientWarning": "WARNING: All products belonging to this client will be permanently deleted!",
     "deleteDeliveryWarning": "WARNING: All products assigned to this delivery person will be unassigned and reset to 'In Stock'!",
-    "cascadeCompleted": "User deleted successfully with cascade operations completed"
+    "cascadeCompleted": "User deleted successfully with cascade operations completed",
+    "manageProducts": "Manage all client products and assignments",
+    "searchProducts": "Search products...",
+    "noProductsFound": "No products found",
+    "allClients": "All Clients",
+    "monitorDeliveries": "Monitor and manage all delivery assignments"
   }
 }

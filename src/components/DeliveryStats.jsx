@@ -1,255 +1,85 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Badge, Alert } from 'react-bootstrap';
-import { 
-  BsTruck, 
-  BsBox, 
-  BsClock, 
-  BsCheckCircle, 
-  BsXCircle,
-  BsExclamationTriangle,
-  BsPerson,
-  BsGraphUp,
-  BsCurrencyDollar 
-} from 'react-icons/bs';
+import { BsTruck, BsClock, BsCheckCircle, BsXCircle, BsExclamationTriangle, BsPerson, BsGraphUp } from 'react-icons/bs';
 import apiClient from '../config/apiClient';
 
+const STAT_STYLES = [
+  { iconBg: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' },
+  { iconBg: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' },
+  { iconBg: 'bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400' },
+  { iconBg: 'bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400' },
+  { iconBg: 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' },
+  { iconBg: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400' },
+];
+
+function StatCard({ title, value, icon: Icon, styleIdx = 0, loading }) {
+  const { iconBg } = STAT_STYLES[styleIdx % STAT_STYLES.length];
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200">
+      <div className="flex items-center gap-4">
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+          <Icon size={20} />
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-0.5">{title}</p>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-none">
+            {loading ? <span className="inline-block w-8 h-6 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" /> : (value ?? 0)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DeliveryStats() {
-  const [stats, setStats] = useState({
-    totalDeliveries: 0,
-    pendingDeliveries: 0,
-    inTransitDeliveries: 0,
-    deliveredDeliveries: 0,
-    cancelledDeliveries: 0,
-    failedDeliveries: 0,
-    totalRevenue: 0,
-    averageDeliveryFee: 0,
-    deliveryPersonCount: 0,
-    activeDeliveryPersons: 0,
-    highPriorityDeliveries: 0,
-    urgentDeliveries: 0
-  });
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadStats();
+    apiClient.get('/api/v1/deliveries/stats')
+      .then(r => setStats(r.data))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
   }, []);
 
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.get('/api/v1/deliveries/stats');
-      setStats(response.data);
-      setError(null);
-    } catch (error) {
-      console.error('Failed to load delivery stats:', error);
-      setError('Failed to load delivery statistics');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <Card>
-        <Card.Body className="text-center py-5">
-          <div className="spinner-border text-primary mb-3" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <div className="text-muted">Loading delivery statistics...</div>
-        </Card.Body>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="danger">
-        <BsExclamationTriangle className="me-2" />
-        {error}
-      </Alert>
-    );
-  }
-
-  const deliveryStatusCards = [
-    {
-      title: 'Total Deliveries',
-      value: stats.totalDeliveries,
-      icon: BsTruck,
-      color: 'primary',
-      bgColor: 'bg-primary'
-    },
-    {
-      title: 'Pending',
-      value: stats.pendingDeliveries,
-      icon: BsClock,
-      color: 'warning',
-      bgColor: 'bg-warning'
-    },
-    {
-      title: 'In Transit',
-      value: stats.inTransitDeliveries,
-      icon: BsTruck,
-      color: 'info',
-      bgColor: 'bg-info'
-    },
-    {
-      title: 'Delivered',
-      value: stats.deliveredDeliveries,
-      icon: BsCheckCircle,
-      color: 'success',
-      bgColor: 'bg-success'
-    },
-    {
-      title: 'Cancelled',
-      value: stats.cancelledDeliveries,
-      icon: BsXCircle,
-      color: 'danger',
-      bgColor: 'bg-danger'
-    },
-    {
-      title: 'Failed',
-      value: stats.failedDeliveries,
-      icon: BsExclamationTriangle,
-      color: 'dark',
-      bgColor: 'bg-dark'
-    }
-  ];
-
-  const performanceCards = [
-    {
-      title: 'Total Revenue',
-      value: `$${stats.totalRevenue?.toFixed(2) || '0.00'}`,
-      icon: BsCurrencyDollar,
-      color: 'success',
-      bgColor: 'bg-success'
-    },
-    {
-      title: 'Avg Delivery Fee',
-      value: `$${stats.averageDeliveryFee?.toFixed(2) || '0.00'}`,
-      icon: BsGraphUp,
-      color: 'info',
-      bgColor: 'bg-info'
-    },
-    {
-      title: 'Delivery Persons',
-      value: stats.deliveryPersonCount || 0,
-      icon: BsPerson,
-      color: 'primary',
-      bgColor: 'bg-primary'
-    },
-    {
-      title: 'High Priority',
-      value: stats.highPriorityDeliveries || 0,
-      icon: BsExclamationTriangle,
-      color: 'warning',
-      bgColor: 'bg-warning'
-    }
-  ];
-
-  const StatCard = ({ title, value, icon: Icon, color, bgColor }) => (
-    <Card className="h-100 border-0 shadow-sm">
-      <Card.Body className="p-4">
-        <div className="d-flex align-items-center">
-          <div 
-            className={`rounded-circle p-3 me-3 ${bgColor} bg-opacity-10`}
-            style={{ width: '60px', height: '60px' }}
-          >
-            <Icon 
-              size={24} 
-              className={`text-${color} d-flex align-items-center justify-content-center w-100 h-100`} 
-            />
-          </div>
-          <div className="flex-grow-1">
-            <div className="text-muted small mb-1">{title}</div>
-            <div className="h4 mb-0 fw-bold">{value}</div>
-          </div>
-        </div>
-      </Card.Body>
-    </Card>
+  if (error) return (
+    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3 text-sm text-red-700 dark:text-red-300">
+      <BsExclamationTriangle />Failed to load delivery statistics
+    </div>
   );
 
-  const completionRate = stats.totalDeliveries > 0 
-    ? ((stats.deliveredDeliveries / stats.totalDeliveries) * 100).toFixed(1)
-    : 0;
-
-  const cancelRate = stats.totalDeliveries > 0 
-    ? (((stats.cancelledDeliveries + stats.failedDeliveries) / stats.totalDeliveries) * 100).toFixed(1)
-    : 0;
+  const CARDS = [
+    { title: 'Total Deliveries', value: stats?.totalDeliveries, icon: BsTruck },
+    { title: 'Pending', value: stats?.pendingDeliveries, icon: BsClock },
+    { title: 'In Transit', value: stats?.inTransitDeliveries, icon: BsTruck },
+    { title: 'Delivered', value: stats?.deliveredDeliveries, icon: BsCheckCircle },
+    { title: 'Cancelled', value: stats?.cancelledDeliveries, icon: BsXCircle },
+    { title: 'Failed', value: stats?.failedDeliveries, icon: BsExclamationTriangle },
+  ];
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h5 className="mb-0">Delivery Statistics</h5>
-        <div className="d-flex gap-2">
-          <Badge bg="success">
-            {completionRate}% Success Rate
-          </Badge>
-          {parseFloat(cancelRate) > 0 && (
-            <Badge bg="warning">
-              {cancelRate}% Cancel Rate
-            </Badge>
-          )}
-        </div>
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {CARDS.map((c, i) => <StatCard key={c.title} {...c} styleIdx={i} loading={loading} />)}
       </div>
 
-      {/* Delivery Status Overview */}
-      <Row className="g-3 mb-4">
-        {deliveryStatusCards.map((card, index) => (
-          <Col key={index} lg={2} md={4} sm={6}>
-            <StatCard {...card} />
-          </Col>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          { icon: BsPerson, label: 'Delivery Persons', val: stats?.deliveryPersonCount },
+          { icon: BsPerson, label: 'Active Now', val: stats?.activeDeliveryPersons },
+          { icon: BsGraphUp, label: 'Avg Fee', val: stats?.averageDeliveryFee ? `${stats.averageDeliveryFee} TND` : null },
+        ].map(({ icon: Icon, label, val }) => (
+          <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 flex items-center gap-3 shadow-sm">
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+              <Icon size={16} className="text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">{label}</p>
+              <p className="text-lg font-extrabold text-slate-900 dark:text-white">{loading ? '—' : val ?? 0}</p>
+            </div>
+          </div>
         ))}
-      </Row>
-
-      {/* Performance Metrics */}
-      <Row className="g-3">
-        {performanceCards.map((card, index) => (
-          <Col key={index} lg={3} md={6}>
-            <StatCard {...card} />
-          </Col>
-        ))}
-      </Row>
-
-      {/* Quick Insights */}
-      {stats.totalDeliveries > 0 && (
-        <Row className="mt-4">
-          <Col xs={12}>
-            <Card className="border-0 shadow-sm">
-              <Card.Header className="bg-light">
-                <h6 className="mb-0">Quick Insights</h6>
-              </Card.Header>
-              <Card.Body>
-                <Row className="g-3">
-                  <Col md={4}>
-                    <div className="text-center p-3 bg-light rounded">
-                      <BsBox size={32} className="text-primary mb-2" />
-                      <div className="h5 mb-1">{stats.urgentDeliveries || 0}</div>
-                      <div className="small text-muted">Urgent Deliveries</div>
-                    </div>
-                  </Col>
-                  <Col md={4}>
-                    <div className="text-center p-3 bg-light rounded">
-                      <BsPerson size={32} className="text-success mb-2" />
-                      <div className="h5 mb-1">{stats.activeDeliveryPersons || 0}</div>
-                      <div className="small text-muted">Active Drivers</div>
-                    </div>
-                  </Col>
-                  <Col md={4}>
-                    <div className="text-center p-3 bg-light rounded">
-                      <BsGraphUp size={32} className="text-info mb-2" />
-                      <div className="h5 mb-1">
-                        {((stats.inTransitDeliveries + stats.pendingDeliveries) || 0)}
-                      </div>
-                      <div className="small text-muted">Active Deliveries</div>
-                    </div>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )}
+      </div>
     </div>
   );
 }

@@ -21,7 +21,11 @@
     "price": "Prix",
     "name": "Nom",
     "currency": "TND",
-    "client": "Client"
+    "client": "Client",
+    "product": "Produit",
+    "products": "Produits",
+    "print": "Imprimer",
+    "printInvoice": "Imprimer Facture"
   },
   "navigation": {
     "dashboard": "Tableau de bord",
@@ -30,7 +34,8 @@
     "deliveries": "Gérer les Livraisons",
     "users": "Gérer les Utilisateurs", 
     "analytics": "Tableau de Bord Analytique",
-    "manageProducts": "Gérer les Produits"
+    "manageProducts": "Gérer les Produits",
+    "assignedDeliveries": "Livraisons Assignées"
   },
   "dashboard": {
     "title": "Tableau de Bord Analytique",
@@ -64,7 +69,8 @@
     "ofTotal": "du total",
     "items": "éléments",
     "trackDelivery": "Suivre Livraison",
-    "viewReports": "Voir Rapports"
+    "viewReports": "Voir Rapports",
+    "manageProductsDeliveries": "Gérez vos produits et assignations de livraison"
   },
   "products": {
     "productName": "Nom du Produit",
@@ -83,7 +89,17 @@
     "creating": "Création...",
     "productCreated": "Produit créé avec succès",
     "createProductFailed": "Échec de création du produit",
-    "addProductSubtitle": "Remplissez les détails du produit pour l'ajouter à votre inventaire"
+    "addProductSubtitle": "Remplissez les détails du produit pour l'ajouter à votre inventaire",
+    "assign": "Assigner",
+    "assigned": "Assigné avec succès",
+    "assigningProduct": "Assignation de",
+    "assignDeliveryPerson": "Assigner un Livreur",
+    "myProducts": "Mes Produits",
+    "manageYourProducts": "Suivez et gérez tous vos produits",
+    "noProducts": "Aucun produit trouvé",
+    "addProduct": "Ajouter Produit",
+    "productInformation": "Informations Produit",
+    "fillInDetails": "Remplissez les détails ci-dessous pour créer un nouveau produit"
   },
   "deliveries": {
     "manageDeliveries": "Gérer les Livraisons",
@@ -126,6 +142,7 @@
     "loadDataFailed": "Échec du chargement des données du tableau de bord",
     "loadProductsFailed": "Échec du chargement des produits",
     "updateStatusFailed": "Échec de la mise à jour du statut du produit",
+    "assignFailed": "Échec de l'assignation du livreur",
     "noProductsYet": "Aucun produit pour le moment",
     "startByAdding": "Commencez par ajouter votre premier produit pour voir les analyses."
   },
@@ -182,6 +199,11 @@
     "assignmentNote": "Lorsque vous assignez ce produit, son statut sera automatiquement mis à jour vers \"Récupéré\" et prêt pour la livraison.",
     "deleteClientWarning": "ATTENTION: Tous les produits appartenant à ce client seront définitivement supprimés!",
     "deleteDeliveryWarning": "ATTENTION: Tous les produits assignés à ce livreur seront désassignés et remis 'En Stock'!",
-    "cascadeCompleted": "Utilisateur supprimé avec succès avec opérations en cascade terminées"
+    "cascadeCompleted": "Utilisateur supprimé avec succès avec opérations en cascade terminées",
+    "manageProducts": "Gérer tous les produits et assignations des clients",
+    "searchProducts": "Rechercher des produits...",
+    "noProductsFound": "Aucun produit trouvé",
+    "allClients": "Tous les Clients",
+    "monitorDeliveries": "Surveiller et gérer toutes les assignations de livraison"
   }
 }

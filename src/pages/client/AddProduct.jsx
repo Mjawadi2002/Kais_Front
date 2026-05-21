@@ -1,37 +1,36 @@
 import React from 'react';
-import { Container, Row, Col, Card } from 'react-bootstrap';
 import { BsBoxSeam, BsPlus } from 'react-icons/bs';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ProductForm from '../../components/forms/ProductForm';
-import './AddProduct.css';
+import PageWrapper from '../../components/common/PageWrapper';
 
-export default function AddProduct(){
+export default function AddProduct() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
-    <Container fluid className="add-product-container">
-      {/* Enhanced Header Section */}
-      <div className="add-product-header">
-        <h1 className="page-title">
-          <BsPlus className="me-3" />
-          Add New Product
+    <PageWrapper>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <BsPlus size={26} className="text-blue-500" />
+          {t('products.addNewProduct')}
         </h1>
-        <p className="page-subtitle">Fill in the product details to add it to your inventory</p>
+        <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">{t('products.addProductSubtitle')}</p>
       </div>
 
-      <Row className="justify-content-center">
-        <Col xl={6} lg={7} md={8} sm={10}>
-          <Card className="product-form-card">
-            <div className="form-container">
-              <div className="form-title">
-                <BsBoxSeam size={32} className="text-primary mb-3" />
-                <h3>Product Information</h3>
-              </div>
-              <ProductForm onCreated={(p)=>{ /* future: maybe navigate to products list */ }} />
+      <div className="max-w-xl mx-auto">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-3">
+              <BsBoxSeam size={26} className="text-blue-600 dark:text-blue-400" />
             </div>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('products.productInformation')}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('products.fillInDetails')}</p>
+          </div>
+          <ProductForm onCreated={() => navigate('/client/products')} />
+        </div>
+      </div>
+    </PageWrapper>
   );
 }

@@ -1,71 +1,65 @@
-import React from 'react';
-import { Dropdown, Button } from 'react-bootstrap';
-import { useTranslation } from 'react-i18next';
-import { BsGlobe, BsFlag, BsFlagFill } from 'react-icons/bs';
+import React, { useState, useRef, useEffect } from 'react';
+import { BsCheck, BsChevronDown } from 'react-icons/bs';
+import { useLanguage } from '../context/LanguageContext';
 
-const LanguageSwitcher = ({ variant = 'outline-primary', size = 'sm' }) => {
-  const { i18n, t } = useTranslation();
+const LANGUAGES = [
+  { code: 'en', nativeName: 'English',  flag: '🇬🇧' },
+  { code: 'fr', nativeName: 'Français', flag: '🇫🇷' },
+  { code: 'ar', nativeName: 'العربية',  flag: '🇹🇳' },
+];
 
-  const languages = [
-    {
-      code: 'en',
-      name: 'English',
-      nativeName: 'English',
-      flag: '🇺🇸',
-      icon: <BsFlag className="me-1" />
-    },
-    {
-      code: 'fr', 
-      name: 'French',
-      nativeName: 'Français',
-      flag: '🇫🇷',
-      icon: <BsFlagFill className="me-1" />
-    }
-  ];
+export default function LanguageSwitcher() {
+  const { currentLanguage, changeLanguage } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
-  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+  const current = LANGUAGES.find(l => l.code === currentLanguage) || LANGUAGES[0];
 
-  const changeLanguage = (languageCode) => {
-    i18n.changeLanguage(languageCode);
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const select = (code) => {
+    changeLanguage(code);
+    setOpen(false);
   };
 
   return (
-    <Dropdown align="end">
-      <Dropdown.Toggle 
-        variant={variant} 
-        size={size}
-        id="language-dropdown"
-        className="d-flex align-items-center"
+    <div className="relative" ref={ref}>
+      <button
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+        onClick={() => setOpen(v => !v)}
+        aria-label="Change language"
       >
-        <BsGlobe className="me-1" />
-        <span className="d-none d-md-inline me-1">{currentLanguage.nativeName}</span>
-        <span className="d-inline d-md-none">{currentLanguage.flag}</span>
-      </Dropdown.Toggle>
+        <span className="text-base leading-none">{current.flag}</span>
+        <span className="hidden sm:block">{current.code.toUpperCase()}</span>
+        <BsChevronDown
+          size={11}
+          className={`text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
 
-      <Dropdown.Menu>
-        <Dropdown.Header>
-          <BsGlobe className="me-2" />
-          Choose Language / Choisir la langue
-        </Dropdown.Header>
-        <Dropdown.Divider />
-        {languages.map((language) => (
-          <Dropdown.Item
-            key={language.code}
-            active={language.code === i18n.language}
-            onClick={() => changeLanguage(language.code)}
-            className="d-flex align-items-center"
-          >
-            <span className="me-2" style={{ fontSize: '1.2em' }}>{language.flag}</span>
-            {language.icon}
-            <div>
-              <div className="fw-medium">{language.nativeName}</div>
-              <small className="text-muted">{language.name}</small>
-            </div>
-          </Dropdown.Item>
-        ))}
-      </Dropdown.Menu>
-    </Dropdown>
+      {open && (
+        <div className="absolute end-0 top-full mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 z-50 animate-slide-up">
+          {LANGUAGES.map(lang => (
+            <button
+              key={lang.code}
+              onClick={() => select(lang.code)}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <span className="text-base leading-none">{lang.flag}</span>
+              <span className="flex-1 text-start">{lang.nativeName}</span>
+              {currentLanguage === lang.code && (
+                <BsCheck size={16} className="text-indigo-500 flex-shrink-0" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
-};
-
-export default LanguageSwitcher;
+}

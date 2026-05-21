@@ -1,163 +1,119 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import apiClient from '../config/apiClient';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 
 const AuthContext = createContext();
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+function getJwtExpiry(token) {
+  try { return JSON.parse(atob(token.split('.')[1])).exp * 1000; }
+  catch { return null; }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [refreshTimer, setRefreshTimer] = useState(null);
+  const timerRef = useRef(null);
+  const refreshFnRef = useRef(null);
 
-  // Function to refresh access token
+  const clearTimer = () => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+  };
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('rf_access_token');
+    localStorage.removeItem('rf_refresh_token');
+    localStorage.removeItem('rf_auth');
+    clearTimer();
+    setUser(null);
+  }, []);
+
+  const scheduleTokenRefresh = useCallback((accessToken) => {
+    clearTimer();
+    const expiresAt = getJwtExpiry(accessToken);
+    if (!expiresAt) return;
+    const delay = Math.max(expiresAt - Date.now() - 5 * 60 * 1000, 60 * 1000);
+    timerRef.current = setTimeout(() => refreshFnRef.current?.(), delay);
+  }, []);
+
   const refreshAccessToken = useCallback(async () => {
+    const refreshToken = localStorage.getItem('rf_refresh_token');
+    if (!refreshToken) { logout(); return false; }
     try {
-      const refreshToken = localStorage.getItem('kais_refresh_token');
-      
-      if (!refreshToken) {
-        logout();
-        return false;
-      }
-
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/v1/auth/refresh-token`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/refresh-token`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to refresh token');
-      }
-
-      const data = await response.json();
-      
-      // Update stored tokens and user data
-      localStorage.setItem('kais_access_token', data.accessToken);
-      localStorage.setItem('kais_refresh_token', data.refreshToken);
-      localStorage.setItem('kais_auth', JSON.stringify(data.user));
-      
+      if (!res.ok) throw new Error('Refresh failed');
+      const data = await res.json();
+      localStorage.setItem('rf_access_token', data.accessToken);
+      localStorage.setItem('rf_refresh_token', data.refreshToken);
+      localStorage.setItem('rf_auth', JSON.stringify(data.user));
       setUser({ ...data.user, token: data.accessToken });
-      
-      // Schedule next refresh (5 minutes before expiry)
-      scheduleTokenRefresh(data.expiresIn);
-      
+      scheduleTokenRefresh(data.accessToken);
       return true;
-    } catch (error) {
-      console.error('Token refresh failed:', error);
+    } catch {
       logout();
       return false;
     }
-  }, []);
+  }, [logout, scheduleTokenRefresh]);
 
-  // Schedule automatic token refresh
-  const scheduleTokenRefresh = useCallback((expiresIn) => {
-    // Clear existing timer
-    if (refreshTimer) {
-      clearTimeout(refreshTimer);
-    }
+  useEffect(() => { refreshFnRef.current = refreshAccessToken; }, [refreshAccessToken]);
 
-    // Schedule refresh 5 minutes before expiry (or 55 minutes for 1-hour tokens)
-    const refreshTime = (expiresIn - 300) * 1000; // Convert to milliseconds, subtract 5 minutes
-    
-    const timer = setTimeout(() => {
-      refreshAccessToken();
-    }, Math.max(refreshTime, 60000)); // Minimum 1 minute
-
-    setRefreshTimer(timer);
-  }, [refreshTimer, refreshAccessToken]);
-
-  // Initialize auth state from localStorage
   useEffect(() => {
+    const handleTokenRefreshed = (e) => {
+      setUser({ ...e.detail.user, token: e.detail.accessToken });
+    };
+    window.addEventListener('auth:token-refreshed', handleTokenRefreshed);
+
     const initAuth = async () => {
       try {
-        const accessToken = localStorage.getItem('kais_access_token');
-        const refreshToken = localStorage.getItem('kais_refresh_token');
-        const userStr = localStorage.getItem('kais_auth');
+        const accessToken = localStorage.getItem('rf_access_token');
+        const refreshToken = localStorage.getItem('rf_refresh_token');
+        const userStr = localStorage.getItem('rf_auth');
+        if (!accessToken || !refreshToken || !userStr) return;
 
-        if (!accessToken || !refreshToken || !userStr) {
-          setIsLoading(false);
-          return;
-        }
+        const expiresAt = getJwtExpiry(accessToken);
+        const isExpired = expiresAt ? Date.now() >= expiresAt : false;
 
-        // Try to verify current token first
-        try {
-          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/v1/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-          });
-
-          if (response.ok) {
-            // Token is still valid
-            const userData = JSON.parse(userStr);
-            setUser({ ...userData, token: accessToken });
-            scheduleTokenRefresh(3600); // Assume 1 hour if we don't have exact expiry
-          } else {
-            // Token expired, try refresh
+        if (isExpired) {
+          await refreshAccessToken();
+        } else {
+          try {
+            const res = await fetch(`${API_URL}/api/v1/auth/me`, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            if (res.ok) {
+              setUser({ ...JSON.parse(userStr), token: accessToken });
+              scheduleTokenRefresh(accessToken);
+            } else {
+              await refreshAccessToken();
+            }
+          } catch {
             await refreshAccessToken();
           }
-        } catch (error) {
-          // If verification fails, try refresh
-          await refreshAccessToken();
         }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-        logout();
-      } finally {
-        setIsLoading(false);
-      }
+      } catch { logout(); }
+      finally { setIsLoading(false); }
     };
 
     initAuth();
-  }, [refreshAccessToken, scheduleTokenRefresh]);
 
-  const login = (userObj, accessToken, refreshToken, expiresIn = 3600) => {
-    const payload = { ...userObj, token: accessToken };
-    
-    // Store tokens separately for better security
-    localStorage.setItem('kais_access_token', accessToken);
-    localStorage.setItem('kais_refresh_token', refreshToken);
-    localStorage.setItem('kais_auth', JSON.stringify(userObj));
-    
-    setUser(payload);
-    
-    // Schedule automatic token refresh
-    scheduleTokenRefresh(expiresIn);
-  };
-
-  const logout = () => {
-    // Clear all stored auth data
-    localStorage.removeItem('kais_access_token');
-    localStorage.removeItem('kais_refresh_token');
-    localStorage.removeItem('kais_auth');
-    
-    // Clear refresh timer
-    if (refreshTimer) {
-      clearTimeout(refreshTimer);
-      setRefreshTimer(null);
-    }
-    
-    setUser(null);
-  };
-
-  // Clean up timer on unmount
-  useEffect(() => {
     return () => {
-      if (refreshTimer) {
-        clearTimeout(refreshTimer);
-      }
+      clearTimer();
+      window.removeEventListener('auth:token-refreshed', handleTokenRefreshed);
     };
-  }, [refreshTimer]);
+  }, []); // mount-only
+
+  const login = useCallback((userObj, accessToken, refreshToken) => {
+    localStorage.setItem('rf_access_token', accessToken);
+    localStorage.setItem('rf_refresh_token', refreshToken);
+    localStorage.setItem('rf_auth', JSON.stringify(userObj));
+    setUser({ ...userObj, token: accessToken });
+    scheduleTokenRefresh(accessToken);
+  }, [scheduleTokenRefresh]);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      logout, 
-      isLoading,
-      refreshAccessToken 
-    }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, refreshAccessToken }}>
       {children}
     </AuthContext.Provider>
   );
